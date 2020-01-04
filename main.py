@@ -9,9 +9,16 @@ WIDTH, HEIGHT = SIZE = 1000, 500
 # Main Display
 screen = pygame.display.set_mode(SIZE)
 
+TILE_SIZE = 48  # 48 or 32
+
+MOVE_SPEED = 7
+JUMP_POWER = 10
+GRAVITY = 0.35
+
 element_texture_folder = 'data\\textures\\png\\elements'
 tiles_texture_folder = 'data\\textures\\png\\tiles'
 levels_folder = 'data\\levels'
+player_texture_folder = 'data\\textures\\player'
 background_path = os.path.join(element_texture_folder, 'background.png')
 
 
@@ -27,14 +34,112 @@ def load_image(path, color_key=None):
     return image
 
 
+class Camera:
+    # зададим начальный сдвиг камеры
+    def __init__(self):
+        self.dx = 0
+        self.dy = 0
+
+    # сдвинуть объект obj на смещение камеры
+    def apply(self, obj):
+        obj.rect.x += self.dx
+        obj.rect.y += self.dy
+
+    # позиционировать камеру на объекте target
+    def update(self, target):
+        self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
+        self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
+
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self, sheet, x, y):
+        super().__init__(all_sprite, player_group)
+        self.image = pygame.Surface(tile_size)
+        self.rect = self.image.get_rect(x=x * tile_size[0], y=y * tile_size[1])
+        self.frames = {
+            'idle_right': self.cut_sheet(sheet, 13, 1),
+            'run_right': self.cut_sheet(sheet, 8, 2),
+            'attack_right_1': self.cut_sheet(sheet, 10, 3),
+            'attack_right_2': self.cut_sheet(sheet, 10, 4),
+            'attack_right_3': self.cut_sheet(sheet, 10, 5),
+            'jump_right': self.cut_sheet(sheet, 6, 6),
+            'damage_right': self.cut_sheet(sheet, 4, 7),
+            'death_right': self.cut_sheet(sheet, 7, 8),
+
+            'idle_left': self.cut_sheet(sheet, 13, 9),
+            'run_left': self.cut_sheet(sheet, 8, 10),
+            'attack_left_1': self.cut_sheet(sheet, 10, 11),
+            'attack_left_2': self.cut_sheet(sheet, 10, 12),
+            'attack_left_3': self.cut_sheet(sheet, 10, 13),
+            'jump_left': self.cut_sheet(sheet, 6, 14),
+            'damage_left': self.cut_sheet(sheet, 4, 15),
+            'death_left': self.cut_sheet(sheet, 7, 16)
+        }
+        self.xvel = 0
+        self.yvel = 0
+        self.onGround = False
+
+    def cut_sheet(self, sheet, columns, rows):
+        frames = []
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+        return frames
+
+    def update(self, left, right, up):
+        if left:
+            self.xvel = -MOVE_SPEED
+        if right:
+            self.xvel = MOVE_SPEED
+        if not (left or right):
+            self.xvel = 0
+        if up:
+            if self.onGround:
+                self.yvel = -JUMP_POWER
+        if not self.onGround:
+            self.yvel += GRAVITY
+        self.onGround = False
+        self.rect.x += self.xvel
+        self.rect.y += self.yvel
+        self.collide()
+
+    def collide(self):
+        for tile in tiles_group.sprites():
+            if pygame.sprite.collide_rect(self, tile):  # если есть пересечение платформы с игроком
+                if self.xvel > 0 and tile.tile_name in left_wall:  # если движется вправо
+                    self.rect.right = tile.rect.left  # то не движется вправо
+
+                if self.xvel < 0 and tile.tile_name in right_wall:  # если движется влево
+                    self.rect.left = tile.rect.right  # то не движется влево
+
+                if self.yvel > 0 and tile.tile_name in floor:  # если падает вниз
+                    self.rect.bottom = tile.rect.top  # то не падает вниз
+                    self.onGround = True  # и становится на что-то твердое
+                    self.yvel = 0  # и энергия падения пропадает
+
+                if self.yvel < 0:  # если движется вверх
+                    if tile.tile_name in wall:
+                        pass
+                    else:
+                        self.rect.top = tile.rect.bottom  # то не движется вверх
+                        self.yvel = 0  # и энергия прыжка пропадает
+
+
 class Tile(pygame.sprite.Sprite):
-    tile_size = (25, 25)
+    images = dict()
 
     def __init__(self, tile_name, x, y):
         super().__init__(all_sprite, tiles_group)
-        self.image = load_image(os.path.join(tiles_texture_folder, tile_name + '.png'))
-        self.image = pygame.transform.scale(self.image, self.tile_size)
-        self.rect = self.image.get_rect(x=self.tile_size[0] * x, y=self.tile_size[1] * y)
+        if tile_name not in self.images:
+            image = load_image(
+                os.path.join(tiles_texture_folder, tile_name + '.png'))
+            image = pygame.transform.scale(image, tile_size)
+            self.images[tile_name] = image
+        self.tile_name = tile_name
+        self.image = self.images[tile_name]
+        self.rect = self.image.get_rect(x=tile_size[0] * x, y=tile_size[1] * y)
 
 
 class SelectLevelSprite(pygame.sprite.Sprite):
@@ -139,28 +244,73 @@ def generate_level(number_level):
     for y in range(len(level_map)):
         for x in range(len(level_map[0])):
             if level_map[y][x] == '@':
-                pass
+                Player(player_sheet, x, y)
             elif level_map[y][x] != '#':
                 Tile(level_map[y][x], x, y)
             count_tile += 1
             show_loading_level(count_tile // percent_one_tile)
 
 
+clock = pygame.time.Clock()
+FPS = 120
+
+tile_size = (TILE_SIZE, TILE_SIZE)
+left_wall = ['c', 'g']
+right_wall = ['b', 'h']
+wall = ['c', 'g', 'b', 'h']
+floor = ['b', 'c', 'd', 'k']
+ceiling = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+
 load_level_font = pygame.font.Font(None, 150)
 
 background_image = load_image(background_path)
 background_image = pygame.transform.scale(background_image, SIZE)
 
+if TILE_SIZE == 48:
+    player_sheet = load_image(os.path.join(player_texture_folder, 'textures_48.png'))
+elif TILE_SIZE == 32:
+    player_sheet = load_image(os.path.join(player_texture_folder, 'textures_32.png'))
+
 all_sprite = pygame.sprite.Group()
 levels_group = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
+player_group = pygame.sprite.GroupSingle()
 
 start_game()
+
+camera = Camera()
+player = player_group.sprite
+left, right, up = False, False, False
+
+frames = 0
 
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             terminate()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_d:
+                right = True
+            elif event.key == pygame.K_a:
+                left = True
+            elif event.key == pygame.K_SPACE:
+                up = True
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_d:
+                right = False
+            elif event.key == pygame.K_a:
+                left = False
+            elif event.key == pygame.K_SPACE:
+                up = False
     screen.blit(background_image, (0, 0))
     all_sprite.draw(screen)
+    player_group.draw(screen)
+    if frames == 3:
+        player.update(left, right, up)
+        frames = 0
+    camera.update(player)
+    for sprite in all_sprite.sprites():
+        camera.apply(sprite)
     pygame.display.flip()
+    clock.tick(FPS)
+    frames += 1
