@@ -11,6 +11,7 @@ screen = pygame.display.set_mode(SIZE)
 
 element_texture_folder = 'data\\textures\\png\\elements'
 tiles_texture_folder = 'data\\textures\\png\\tiles'
+levels_folder = 'data\\levels'
 background_path = os.path.join(element_texture_folder, 'background.png')
 
 
@@ -24,6 +25,16 @@ def load_image(path, color_key=None):
     else:
         image = image.convert_alpha()
     return image
+
+
+class Tile(pygame.sprite.Sprite):
+    tile_size = (25, 25)
+
+    def __init__(self, tile_name, x, y):
+        super().__init__(all_sprite, tiles_group)
+        self.image = load_image(os.path.join(tiles_texture_folder, tile_name + '.png'))
+        self.image = pygame.transform.scale(self.image, self.tile_size)
+        self.rect = self.image.get_rect(x=self.tile_size[0] * x, y=self.tile_size[1] * y)
 
 
 class SelectLevelSprite(pygame.sprite.Sprite):
@@ -72,7 +83,7 @@ def start_game():
                 if (event.button == pygame.BUTTON_LEFT and
                         button_rect.collidepoint(event.pos[0], event.pos[1])):
                     number_level = select_level()
-                    load_level(number_level)
+                    generate_level(number_level)
                     return None
 
 
@@ -99,21 +110,36 @@ def select_level():
                         return level_sprite.number_level
 
 
-def load_level(number_level):
-    print(number_level)
+def load_level(level_path):
+    with open(level_path, mode='r', encoding='utf8') as mapFile:
+        level_map = [line.strip() for line in mapFile]
+    max_width = max(map(len, level_map))
+    level_map = list(map(lambda row: row.ljust(max_width, '#'), level_map))
+    return level_map
+
+
+def generate_level(number_level):
+    level_path = os.path.join(levels_folder, str(number_level) + '.lvl')
+    level_map = load_level(level_path)
+    for y in range(len(level_map)):
+        for x in range(len(level_map[0])):
+            if level_map[y][x] == '@':
+                pass
+            elif level_map[y][x] != '#':
+                Tile(level_map[y][x], x, y)
 
 
 background_image = load_image(background_path)
 background_image = pygame.transform.scale(background_image, SIZE)
 all_sprite = pygame.sprite.Group()
 levels_group = pygame.sprite.Group()
+tiles_group = pygame.sprite.Group()
 start_game()
 
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             terminate()
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            screen.blit(background_image, (0, 0))
-
+    screen.blit(background_image, (0, 0))
+    all_sprite.draw(screen)
     pygame.display.flip()
