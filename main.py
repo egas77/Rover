@@ -110,6 +110,18 @@ def select_level():
                         return level_sprite.number_level
 
 
+def show_loading_level(percent):
+    if percent > 100:
+        percent = 100
+    screen.blit(background_image, (0, 0))
+    percent_label = load_level_font.render(str(percent) + ' %', 1,
+                                           pygame.color.Color(0, 225, 45))
+    screen.blit(percent_label,
+                (WIDTH // 2 - percent_label.get_width() // 2,
+                 HEIGHT // 2 - percent_label.get_height() // 2))
+    pygame.display.flip()
+
+
 def load_level(level_path):
     with open(level_path, mode='r', encoding='utf8') as mapFile:
         level_map = [line.strip() for line in mapFile]
@@ -121,19 +133,28 @@ def load_level(level_path):
 def generate_level(number_level):
     level_path = os.path.join(levels_folder, str(number_level) + '.lvl')
     level_map = load_level(level_path)
+    count_tiles = len(level_map * len(level_map[0]))
+    percent_one_tile = count_tiles // 100
+    count_tile = 0
     for y in range(len(level_map)):
         for x in range(len(level_map[0])):
             if level_map[y][x] == '@':
                 pass
             elif level_map[y][x] != '#':
                 Tile(level_map[y][x], x, y)
+            count_tile += 1
+            show_loading_level(count_tile // percent_one_tile)
 
+
+load_level_font = pygame.font.Font(None, 150)
 
 background_image = load_image(background_path)
 background_image = pygame.transform.scale(background_image, SIZE)
+
 all_sprite = pygame.sprite.Group()
 levels_group = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
+
 start_game()
 
 while True:
