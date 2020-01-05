@@ -9,7 +9,7 @@ WIDTH, HEIGHT = SIZE = 1000, 500
 # Main Display
 screen = pygame.display.set_mode(SIZE)
 
-TILE_SIZE = 48  # 48 or 32
+TILE_SIZE = 48
 
 MOVE_SPEED = TILE_SIZE * 0.2
 JUMP_POWER = TILE_SIZE * 0.4
@@ -56,9 +56,6 @@ class Camera:
 class Player(pygame.sprite.Sprite):
     def __init__(self, sheet, x, y):
         super().__init__(all_sprite, player_group)
-        self.image = pygame.Surface(tile_size)
-        self.rect = self.image.get_rect(x=x * tile_size[0], y=y * tile_size[1])
-        self.mask = pygame.mask.from_surface(self.image)
         self.frames = {
             'idle_right': self.cut_sheet(sheet, 13, 1),
             'run_right': self.cut_sheet(sheet, 8, 2),
@@ -78,6 +75,8 @@ class Player(pygame.sprite.Sprite):
             'damage_left': self.cut_sheet(sheet, 4, 15),
             'death_left': self.cut_sheet(sheet, 7, 16)
         }
+        self.image = self.frames['idle_right'][0]
+        self.rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE - 25, TILE_SIZE - 5)
         self.xvel = 0
         self.yvel = 0
         self.onGround = False
@@ -88,9 +87,9 @@ class Player(pygame.sprite.Sprite):
     def cut_sheet(self, sheet, columns, row):
         frames = []
         for col in range(columns):
-            frame_location = (self.rect.w * col, self.rect.h * (row - 1))
+            frame_location = (TILE_SIZE * col + 10, TILE_SIZE * (row - 1))
             cur_frame = sheet.subsurface(pygame.Rect(
-                frame_location, self.rect.size))
+                frame_location, (TILE_SIZE - 10, TILE_SIZE)))
             cur_frame = cur_frame.convert_alpha()
             frames.append(cur_frame)
         return frames
@@ -115,19 +114,19 @@ class Player(pygame.sprite.Sprite):
         self.collide(self.xvel, 0)
 
     def collide(self, xvel, yvel):
-        for tile in tiles_group.sprites():
-            if pygame.sprite.collide_mask(self, tile):  # если есть пересечение платформы с игроком
-                if xvel > 0:  # если движется вправо
-                    self.rect.right = tile.rect.left  # то не движется вправо
-                if xvel < 0:  # если движется влево
-                    self.rect.left = tile.rect.right  # то не движется влево
-                if yvel > 0:  # если падает вниз
-                    self.rect.bottom = tile.rect.top  # то не падает вниз
-                    self.onGround = True  # и становится на что-то твердое
-                    self.yvel = 0
-                if yvel < 0:  # если движется вверх
-                    self.rect.top = tile.rect.bottom  # то не движется вверх
-                    self.yvel = 0  # и энергия прыжка пропадает
+        for tile in pygame.sprite.spritecollide(self, tiles_group, False,
+                                                collided=pygame.sprite.collide_rect):
+            if xvel > 0:  # если движется вправо
+                self.rect.right = tile.rect.left  # то не движется вправо
+            if xvel < 0:  # если движется влево
+                self.rect.left = tile.rect.right  # то не движется влево
+            if yvel > 0:  # если падает вниз
+                self.rect.bottom = tile.rect.top  # то не падает вниз
+                self.onGround = True  # и становится на что-то твердое
+                self.yvel = 0
+            if yvel < 0:  # если движется вверх
+                self.rect.top = tile.rect.bottom  # то не движется вверх
+                self.yvel = 0  # и энергия прыжка пропадает
 
     def update_sprite_image(self):
         if self.xvel > 0:
@@ -166,7 +165,6 @@ class Player(pygame.sprite.Sprite):
                         self.cut_frame_update % len(self.frames['run_left'])]
             self.cut_frame_update += 1
         self.cut_frame += 1
-        self.mask = pygame.mask.from_surface(self.image)
 
 
 class Tile(pygame.sprite.Sprite):
@@ -182,7 +180,6 @@ class Tile(pygame.sprite.Sprite):
         self.tile_name = tile_name
         self.image = self.images[tile_name]
         self.rect = self.image.get_rect(x=tile_size[0] * x, y=tile_size[1] * y)
-        self.mask = pygame.mask.from_surface(self.image)
 
 
 class SelectLevelSprite(pygame.sprite.Sprite):
