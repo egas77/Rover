@@ -11,9 +11,11 @@ screen = pygame.display.set_mode(SIZE)
 
 TILE_SIZE = 48  # 48 or 32
 
-MOVE_SPEED = 7
-JUMP_POWER = 10
-GRAVITY = 0.35
+MOVE_SPEED = TILE_SIZE * 0.2
+JUMP_POWER = TILE_SIZE * 0.4
+GRAVITY = TILE_SIZE * 0.05
+
+FPS = 120
 
 element_texture_folder = 'data\\textures\\png\\elements'
 tiles_texture_folder = 'data\\textures\\png\\tiles'
@@ -56,6 +58,7 @@ class Player(pygame.sprite.Sprite):
         super().__init__(all_sprite, player_group)
         self.image = pygame.Surface(tile_size)
         self.rect = self.image.get_rect(x=x * tile_size[0], y=y * tile_size[1])
+        self.mask = pygame.mask.from_surface(self.image)
         self.frames = {
             'idle_right': self.cut_sheet(sheet, 13, 1),
             'run_right': self.cut_sheet(sheet, 8, 2),
@@ -78,14 +81,18 @@ class Player(pygame.sprite.Sprite):
         self.xvel = 0
         self.yvel = 0
         self.onGround = False
+        self.rotation = 'right'
+        self.cut_frame = 0
+        self.cut_frame_update = 0
 
-    def cut_sheet(self, sheet, columns, rows):
+    def cut_sheet(self, sheet, columns, row):
         frames = []
-        for j in range(rows):
-            for i in range(columns):
-                frame_location = (self.rect.w * i, self.rect.h * j)
-                frames.append(sheet.subsurface(pygame.Rect(
-                    frame_location, self.rect.size)))
+        for col in range(columns):
+            frame_location = (self.rect.w * col, self.rect.h * (row - 1))
+            cur_frame = sheet.subsurface(pygame.Rect(
+                frame_location, self.rect.size))
+            cur_frame = cur_frame.convert_alpha()
+            frames.append(cur_frame)
         return frames
 
     def update(self, left, right, up):
@@ -98,33 +105,68 @@ class Player(pygame.sprite.Sprite):
         if up:
             if self.onGround:
                 self.yvel = -JUMP_POWER
+        self.update_sprite_image()
         if not self.onGround:
             self.yvel += GRAVITY
         self.onGround = False
-        self.rect.x += self.xvel
         self.rect.y += self.yvel
-        self.collide()
+        self.collide(0, self.yvel)
+        self.rect.x += self.xvel
+        self.collide(self.xvel, 0)
 
-    def collide(self):
+    def collide(self, xvel, yvel):
         for tile in tiles_group.sprites():
-            if pygame.sprite.collide_rect(self, tile):  # если есть пересечение платформы с игроком
-                if self.xvel > 0 and tile.tile_name in left_wall:  # если движется вправо
+            if pygame.sprite.collide_mask(self, tile):  # если есть пересечение платформы с игроком
+                if xvel > 0:  # если движется вправо
                     self.rect.right = tile.rect.left  # то не движется вправо
-
-                if self.xvel < 0 and tile.tile_name in right_wall:  # если движется влево
+                if xvel < 0:  # если движется влево
                     self.rect.left = tile.rect.right  # то не движется влево
-
-                if self.yvel > 0 and tile.tile_name in floor:  # если падает вниз
+                if yvel > 0:  # если падает вниз
                     self.rect.bottom = tile.rect.top  # то не падает вниз
                     self.onGround = True  # и становится на что-то твердое
-                    self.yvel = 0  # и энергия падения пропадает
+                    self.yvel = 0
+                if yvel < 0:  # если движется вверх
+                    self.rect.top = tile.rect.bottom  # то не движется вверх
+                    self.yvel = 0  # и энергия прыжка пропадает
 
-                if self.yvel < 0:  # если движется вверх
-                    if tile.tile_name in wall:
-                        pass
-                    else:
-                        self.rect.top = tile.rect.bottom  # то не движется вверх
-                        self.yvel = 0  # и энергия прыжка пропадает
+    def update_sprite_image(self):
+        if self.xvel > 0:
+            self.rotation = 'right'
+        elif self.xvel < 0:
+            self.rotation = 'left'
+        if self.cut_frame % 5 == 0:
+            if self.rotation == 'right':
+                if self.xvel == 0 and self.yvel == 0:
+                    self.image = self.frames['idle_right'][
+                        self.cut_frame_update % len(self.frames['idle_right'])]
+
+                elif self.yvel != 0 and not self.onGround:
+                    if self.onGround and self.yvel < 0:
+                        self.cut_frame_update = 0
+                    self.image = self.frames['jump_right'][
+                        self.cut_frame_update % len(self.frames['jump_right'])]
+
+                elif self.xvel != 0:
+                    self.image = self.frames['run_right'][
+                        self.cut_frame_update % len(self.frames['run_right'])]
+
+            elif self.rotation == 'left':
+                if self.xvel == 0 and self.yvel == 0 and self.onGround:
+                    self.image = self.frames['idle_left'][
+                        self.cut_frame_update % len(self.frames['idle_left'])]
+
+                elif self.yvel != 0 and not self.onGround:
+                    if self.onGround and self.yvel > 0:
+                        self.cut_frame_update = 0
+                    self.image = self.frames['jump_left'][
+                        self.cut_frame_update % len(self.frames['jump_left'])]
+
+                elif self.xvel != 0:
+                    self.image = self.frames['run_left'][
+                        self.cut_frame_update % len(self.frames['run_left'])]
+            self.cut_frame_update += 1
+        self.cut_frame += 1
+        self.mask = pygame.mask.from_surface(self.image)
 
 
 class Tile(pygame.sprite.Sprite):
@@ -140,6 +182,7 @@ class Tile(pygame.sprite.Sprite):
         self.tile_name = tile_name
         self.image = self.images[tile_name]
         self.rect = self.image.get_rect(x=tile_size[0] * x, y=tile_size[1] * y)
+        self.mask = pygame.mask.from_surface(self.image)
 
 
 class SelectLevelSprite(pygame.sprite.Sprite):
@@ -229,7 +272,7 @@ def show_loading_level(percent):
 
 def load_level(level_path):
     with open(level_path, mode='r', encoding='utf8') as mapFile:
-        level_map = [line.strip() for line in mapFile]
+        level_map = [line.rstrip() for line in mapFile]
     max_width = max(map(len, level_map))
     level_map = list(map(lambda row: row.ljust(max_width, '#'), level_map))
     return level_map
@@ -240,26 +283,26 @@ def generate_level(number_level):
     level_map = load_level(level_path)
     count_tiles = len(level_map * len(level_map[0]))
     percent_one_tile = count_tiles // 100
-    count_tile = 0
+    if not percent_one_tile:
+        percent_one_tile = 1
+    current_tile = 0
     for y in range(len(level_map)):
         for x in range(len(level_map[0])):
             if level_map[y][x] == '@':
-                Player(player_sheet, x, y)
-            elif level_map[y][x] != '#':
+                if not player_group.sprite:
+                    Player(player_sheet, x, y)
+                else:
+                    print('Fatal Error: The player has already been created before')
+                    terminate()
+            elif level_map[y][x] != '#' and level_map[y][x] != ' ':
                 Tile(level_map[y][x], x, y)
-            count_tile += 1
-            show_loading_level(count_tile // percent_one_tile)
+            current_tile += 1
+            show_loading_level(current_tile // percent_one_tile)
 
 
 clock = pygame.time.Clock()
-FPS = 120
 
 tile_size = (TILE_SIZE, TILE_SIZE)
-left_wall = ['c', 'g']
-right_wall = ['b', 'h']
-wall = ['c', 'g', 'b', 'h']
-floor = ['b', 'c', 'd', 'k']
-ceiling = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 
 load_level_font = pygame.font.Font(None, 150)
 
