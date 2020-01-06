@@ -9,6 +9,7 @@ pygame.init()
 WIDTH, HEIGHT = SIZE = 1000, 500
 # Main Display
 screen = pygame.display.set_mode(SIZE)
+screen_rect = screen.get_rect()
 
 TILE_SIZE = 48
 
@@ -91,6 +92,7 @@ class GamePerson(pygame.sprite.Sprite):
         self.rotation = ROTATION_RIGHT
         self.cut_frame = 0
         self.cut_frame_update = 0
+        self.moving = False
 
     def collide(self, xvel, yvel,
                 space_mask_right, space_mask_left, space_mask_up, space_mask_bottom,
@@ -260,24 +262,27 @@ class Player(GamePerson):
         )
         self.image = self.frames['idle_right'][0]
         self.mask = pygame.mask.Mask(self.rect.size, False)
-        self.space_mask_right = 18
+        self.space_mask_right = 19
         self.space_mask_left = 18
         self.space_mask_up = 18
         self.space_mask_bottom = 5
         self.lives = 100000
+        self.moving = True
         for x in range(self.rect.width):
             for y in range(self.rect.height):
                 if (self.space_mask_left <= x <= self.rect.width - self.space_mask_right
                         and self.space_mask_up <= y <= self.rect.height - self.space_mask_bottom):
                     self.mask.set_at((x, y), 1)
 
-    def update(self, left, right, up):
+    def update(self, left, right, up, speed_up):
         if left:
             self.xvel = -MOVE_SPEED
         if right:
             self.xvel = MOVE_SPEED
         if not (left or right) or self.damage_mode or self.death_mode:
             self.xvel = 0
+        if speed_up:
+            self.xvel *= 1.75
         if up:
             if self.onGround:
                 self.yvel = -JUMP_POWER
@@ -312,7 +317,7 @@ class Player(GamePerson):
 
 
 class Enemy(GamePerson):
-    def __init__(self, sheet, x, y):
+    def __init__(self, sheet, x, y, rotation):
         super().__init__(x, y, all_sprite, enemy_group)
         self.frames = {
             'idle_right': self.cut_sheet(sheet, 5, 1, 48, 57),
@@ -350,7 +355,6 @@ class Enemy(GamePerson):
         )
 
         self.image = self.frames['idle_right'][0]
-        self.image = pygame.Surface((self.image.get_size()))
         self.mask = pygame.mask.Mask(self.rect.size, False)
         self.space_mask_right = 12
         self.space_mask_left = 18
@@ -361,19 +365,30 @@ class Enemy(GamePerson):
                 if (self.space_mask_left <= x <= self.rect.width - self.space_mask_right
                         and self.space_mask_up <= y <= self.rect.height - self.space_mask_bottom):
                     self.mask.set_at((x, y), 1)
-        self.xvel = choice((-ENEMY_MOVE_SPEED, ENEMY_MOVE_SPEED))
+        if rotation == ROTATION_LEFT:
+            self.xvel = -ENEMY_MOVE_SPEED
+        elif rotation == ROTATION_RIGHT:
+            self.xvel = ENEMY_MOVE_SPEED
 
     def update(self, *args):
-        self.update_sprite_image()
-        if not self.onGround:
-            self.yvel += GRAVITY
-        self.onGround = False
-        self.rect.y += self.yvel
-        self.collide(0, self.yvel, self.space_mask_right, self.space_mask_left,
-                     self.space_mask_up, self.space_mask_bottom, reverse_x=True)
-        self.rect.x += self.xvel
-        self.collide(self.xvel, 0, self.space_mask_right, self.space_mask_left,
-                     self.space_mask_up, self.space_mask_bottom, reverse_x=True)
+        if not self.moving:
+            self.moving = self.check_in_screen()
+        if self.moving:
+            self.update_sprite_image()
+            if not self.onGround:
+                self.yvel += GRAVITY
+            self.onGround = False
+            self.rect.y += self.yvel
+            self.collide(0, self.yvel, self.space_mask_right, self.space_mask_left,
+                         self.space_mask_up, self.space_mask_bottom, reverse_x=True)
+            self.rect.x += self.xvel
+            self.collide(self.xvel, 0, self.space_mask_right, self.space_mask_left,
+                         self.space_mask_up, self.space_mask_bottom, reverse_x=True)
+
+    def check_in_screen(self):
+        if self.rect.colliderect(screen_rect) and not self.moving:
+            return True
+        return False
 
 
 class Tile(pygame.sprite.Sprite):
@@ -501,8 +516,10 @@ def generate_level(number_level):
                 else:
                     print('Fatal Error: The player has already been created before')
                     terminate()
-            elif level_map[y][x] == '!':
-                Enemy(ememy_sheet, x, y)
+            elif level_map[y][x] == '>':
+                Enemy(ememy_sheet, x, y, ROTATION_RIGHT)
+            elif level_map[y][x] == '<':
+                Enemy(ememy_sheet, x, y, ROTATION_LEFT)
             elif level_map[y][x] != '#' and level_map[y][x] != ' ':
                 Tile(level_map[y][x], x, y)
             current_tile += 1
@@ -565,7 +582,10 @@ while True:
                 camera.set_memory(0, 0)
     screen.blit(background_image, (0, 0))
     if frames % 2 == 0:
-        player.update(left, right, up)
+        if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
+            player.update(left, right, up, True)
+        else:
+            player.update(left, right, up, False)
         for enemy in enemy_group.sprites():
             enemy.update()
         camera.update(player)
