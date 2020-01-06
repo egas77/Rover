@@ -158,7 +158,7 @@ class GamePerson(pygame.sprite.Sprite):
                         self.damage_mode = False
                         self.cut_frame_update = 0
                         if isinstance(self, Player):
-                            self.spawn_check_point()
+                            self.restart()
 
                 elif self.attack_group:
                     self.image = self.frames[self.attack_group[ROTATION_RIGHT]][
@@ -196,7 +196,7 @@ class GamePerson(pygame.sprite.Sprite):
                         self.damage_mode = False
                         self.cut_frame_update = 0
                         if isinstance(self, Player):
-                            self.spawn_check_point()
+                            self.restart()
 
                 elif self.attack_group:
                     self.image = self.frames[self.attack_group[ROTATION_LEFT]][
@@ -266,13 +266,13 @@ class Player(GamePerson):
         self.space_mask_left = 18
         self.space_mask_up = 18
         self.space_mask_bottom = 5
-        self.lives = 100000
-        self.moving = True
+        self.lives = 5
         for x in range(self.rect.width):
             for y in range(self.rect.height):
                 if (self.space_mask_left <= x <= self.rect.width - self.space_mask_right
                         and self.space_mask_up <= y <= self.rect.height - self.space_mask_bottom):
                     self.mask.set_at((x, y), 1)
+        self.visible_hearts()
 
     def update(self, left, right, up, speed_up):
         if left:
@@ -303,17 +303,44 @@ class Player(GamePerson):
                                                  collided=pygame.sprite.collide_mask):
             if self.attack_group:
                 enemy.death()
-            else:
+            elif not self.damage_mode and not self.death_mode:
                 self.lives -= 1
                 if self.lives > 0:
                     self.damage()
                 else:
                     self.death()
+                if self.rotation == enemy.rotation:
+                    enemy.xvel = -enemy.xvel
+                    if enemy.rotation == ROTATION_LEFT:
+                        enemy.rotation = ROTATION_RIGHT
+                    else:
+                        enemy.rotation = ROTATION_LEFT
                 enemy.attack()
+
+    def restart(self):
+        self.spawn_check_point()
+        self.visible_hearts()
 
     def spawn_check_point(self):
         self.rect.x += camera.get_memory_x()
         self.rect.y += camera.get_memory_y()
+
+    def visible_hearts(self):
+        hearts_group.empty()
+        for x in range(self.lives):
+            Heart(x)
+
+
+class Heart(pygame.sprite.Sprite):
+    heart_image = load_image(os.path.join(element_texture_folder, 'heart.png'))
+    width_heart = heart_image.get_width()
+    space_x = 5
+
+    def __init__(self, x):
+        super().__init__(hearts_group)
+        self.image = self.heart_image
+        self.rect = self.image.get_rect(x=x * self.width_heart + self.space_x * (x + 1),
+                                        y=10)
 
 
 class Enemy(GamePerson):
@@ -356,8 +383,8 @@ class Enemy(GamePerson):
 
         self.image = self.frames['idle_right'][0]
         self.mask = pygame.mask.Mask(self.rect.size, False)
-        self.space_mask_right = 12
-        self.space_mask_left = 18
+        self.space_mask_right = 5
+        self.space_mask_left = 5
         self.space_mask_up = 18
         self.space_mask_bottom = 5
         for x in range(self.rect.width):
@@ -543,6 +570,7 @@ levels_group = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.GroupSingle()
 enemy_group = pygame.sprite.Group()
+hearts_group = pygame.sprite.Group()
 
 start_game()
 
@@ -594,6 +622,7 @@ while True:
     tiles_group.draw(screen)
     enemy_group.draw(screen)
     player_group.draw(screen)
+    hearts_group.draw(screen)
     pygame.display.flip()
     clock.tick(FPS)
     frames += 1
