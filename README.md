@@ -11,9 +11,29 @@
 
 Пример:
 
-На месте символа "a" на уровне нарисуется изображение:  
+На месте символа "a" на уровне нарисуется изображение:
 
 ![a.png](data/textures/png/tiles/a.png)
+
+### Все символы
+
+"!" - blade.png  
+"$" - bush1.png  
+"%" - bush2.png  
+"^" - button.png  
+":" - cell.png  
+"&" - door.png  
+"1" - flower1.png  
+"2" - flower2.png  
+"3" - flower3.png  
+"4" - flower4.png
+"5" - flower5.png  
+"6" - heart.png  
+"7" - key.png  
+"8" - plate1.png  
+"9" - tree1.png  
+"0" - tree2.png  
+" " - пустое место уровня
 
 ## Добавление своих уровней
 
