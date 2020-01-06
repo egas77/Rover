@@ -339,8 +339,7 @@ class Heart(pygame.sprite.Sprite):
     def __init__(self, x):
         super().__init__(hearts_group)
         self.image = self.heart_image
-        self.rect = self.image.get_rect(x=x * self.width_heart + self.space_x * (x + 1),
-                                        y=10)
+        self.rect = self.image.get_rect(x=x * self.width_heart + self.space_x * (x + 1), y=10)
 
 
 class Enemy(GamePerson):
