@@ -26,7 +26,8 @@ FPS = 120
 element_texture_folder = 'data\\textures\\png\\elements'
 tiles_texture_folder = 'data\\textures\\png\\tiles'
 levels_folder = 'data\\levels'
-player_texture_folder = 'data\\textures\\player'
+player_texture_path = 'data\\textures\\player\\textures_48.png'
+enemy_texture_path = 'data\\textures\\enemy\\textures_48.png'
 background_path = os.path.join(element_texture_folder, 'background.png')
 
 
@@ -59,9 +60,61 @@ class Camera:
         self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
 
 
-class Player(pygame.sprite.Sprite):
+class GamePerson(pygame.sprite.Sprite):
+    def __init__(self, x, y, *groups):
+        super().__init__(groups)
+        self.rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+        self.xvel = 0
+        self.yvel = 0
+        self.onGround = False
+        self.attack_group = None
+        self.rotation = ROTATION_RIGHT
+        self.cut_frame = 0
+        self.cut_frame_update = 0
+
+    def collide(self, xvel, yvel,
+                space_mask_right, space_mask_left, space_mask_up, space_mask_bottom,
+                reverse_x=False):
+        for tile in pygame.sprite.spritecollide(self, tiles_group, False,
+                                                collided=pygame.sprite.collide_mask):
+            if xvel > 0:  # если движется вправо
+                self.rect.right = tile.rect.left + space_mask_right - 1  # то не движется вправо
+                if reverse_x:
+                    self.xvel = -self.xvel
+            if xvel < 0:  # если движется влево
+                self.rect.left = tile.rect.right - space_mask_left + 1  # то не движется влево
+                if reverse_x:
+                    self.xvel = -self.xvel
+            if yvel > 0:  # если падает вниз
+                self.rect.bottom = tile.rect.top + space_mask_bottom - 1  # то не падает вниз
+                self.onGround = True  # и становится на что-то твердое
+                self.yvel = 0
+            if yvel < 0:  # если движется вверх
+                self.rect.top = tile.rect.bottom - space_mask_up + 1  # то не движется вверх
+                self.yvel = 0  # и энергия прыжка пропадает
+
+    def cut_sheet(self, sheet, columns, row):
+        frames = []
+        for col in range(columns):
+            frame_location = (TILE_SIZE * col, TILE_SIZE * (row - 1))
+            cur_frame = sheet.subsurface(pygame.Rect(
+                frame_location, (TILE_SIZE, TILE_SIZE)))
+            cur_frame = cur_frame.convert_alpha()
+            frames.append(cur_frame)
+        return frames
+
+    def attack(self):
+        self.attack_group = choice(self.attack_groups)
+        self.cut_frame_update = 0
+
+    def update(self, *args):
+        self.rect.x += self.xvel
+        self.rect.y += self.yvel
+
+
+class Player(GamePerson):
     def __init__(self, sheet, x, y):
-        super().__init__(all_sprite, player_group)
+        super().__init__(x, y, all_sprite, player_group)
         self.frames = {
             'idle_right': self.cut_sheet(sheet, 13, 1),
             'run_right': self.cut_sheet(sheet, 8, 2),
@@ -95,35 +148,17 @@ class Player(pygame.sprite.Sprite):
                 ROTATION_LEFT: 'attack_left_3'
             }
         )
-
         self.image = self.frames['idle_right'][0]
-        self.rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
         self.mask = pygame.mask.Mask(self.rect.size, False)
+        self.space_mask_right = 18
+        self.space_mask_left = 18
+        self.space_mask_up = 18
+        self.space_mask_bottom = 5
         for x in range(self.rect.width):
             for y in range(self.rect.height):
-                if 18 <= x <= self.rect.width - 18 and 18 <= y <= self.rect.height - 5:
+                if (self.space_mask_left <= x <= self.rect.width - self.space_mask_right
+                        and self.space_mask_up <= y <= self.rect.height - self.space_mask_bottom):
                     self.mask.set_at((x, y), 1)
-        for x in range(self.rect.width):
-            for y in range(self.rect.height):
-                print(self.mask.get_at((y, x)), end='')
-            print()
-        self.xvel = 0
-        self.yvel = 0
-        self.onGround = False
-        self.attack_group = None
-        self.rotation = ROTATION_RIGHT
-        self.cut_frame = 0
-        self.cut_frame_update = 0
-
-    def cut_sheet(self, sheet, columns, row):
-        frames = []
-        for col in range(columns):
-            frame_location = (TILE_SIZE * col, TILE_SIZE * (row - 1))
-            cur_frame = sheet.subsurface(pygame.Rect(
-                frame_location, (TILE_SIZE, TILE_SIZE)))
-            cur_frame = cur_frame.convert_alpha()
-            frames.append(cur_frame)
-        return frames
 
     def update(self, left, right, up):
         if left:
@@ -140,24 +175,11 @@ class Player(pygame.sprite.Sprite):
             self.yvel += GRAVITY
         self.onGround = False
         self.rect.y += self.yvel
-        self.collide(0, self.yvel)
+        self.collide(0, self.yvel, self.space_mask_right, self.space_mask_left,
+                     self.space_mask_up, self.space_mask_bottom)
         self.rect.x += self.xvel
-        self.collide(self.xvel, 0)
-
-    def collide(self, xvel, yvel):
-        for tile in pygame.sprite.spritecollide(self, tiles_group, False,
-                                                collided=pygame.sprite.collide_mask):
-            if xvel > 0:  # если движется вправо
-                self.rect.right = tile.rect.left + 17  # то не движется вправо
-            if xvel < 0:  # если движется влево
-                self.rect.left = tile.rect.right - 17  # то не движется влево
-            if yvel > 0:  # если падает вниз
-                self.rect.bottom = tile.rect.top + 4  # то не падает вниз
-                self.onGround = True  # и становится на что-то твердое
-                self.yvel = 0
-            if yvel < 0:  # если движется вверх
-                self.rect.top = tile.rect.bottom - 17  # то не движется вверх
-                self.yvel = 0  # и энергия прыжка пропадает
+        self.collide(self.xvel, 0, self.space_mask_right, self.space_mask_left,
+                     self.space_mask_up, self.space_mask_bottom)
 
     def update_sprite_image(self):
         if self.xvel > 0:
@@ -213,9 +235,72 @@ class Player(pygame.sprite.Sprite):
             self.cut_frame_update += 1
         self.cut_frame += 1
 
-    def attack(self):
-        self.attack_group = choice(self.attack_groups)
-        self.cut_frame_update = 0
+
+class Enemy(GamePerson):
+    def __init__(self, sheet, x, y):
+        super().__init__(x, y, all_sprite, enemy_group)
+        self.frames = {
+            'idle_right': self.cut_sheet(sheet, 5, 1),
+            'run_right': self.cut_sheet(sheet, 8, 2),
+            'attack_right_1': self.cut_sheet(sheet, 7, 3),
+            'attack_right_2': self.cut_sheet(sheet, 6, 4),
+            'attack_right_3': self.cut_sheet(sheet, 2, 5),
+            'jump_right': self.cut_sheet(sheet, 5, 6),
+            'damage_right': self.cut_sheet(sheet, 4, 7),
+            'death_right': self.cut_sheet(sheet, 7, 8),
+
+            'idle_left': self.cut_sheet(sheet, 5, 9),
+            'run_left': self.cut_sheet(sheet, 8, 10),
+            'attack_left_1': self.cut_sheet(sheet, 7, 11),
+            'attack_left_2': self.cut_sheet(sheet, 6, 12),
+            'attack_left_3': self.cut_sheet(sheet, 2, 13),
+            'jump_left': self.cut_sheet(sheet, 5, 14),
+            'damage_left': self.cut_sheet(sheet, 4, 15),
+            'death_left': self.cut_sheet(sheet, 7, 16)
+        }
+
+        self.attack_groups = (
+            {
+                ROTATION_RIGHT: 'attack_right_1',
+                ROTATION_LEFT: 'attack_left_1'
+            },
+            {
+                ROTATION_RIGHT: 'attack_right_2',
+                ROTATION_LEFT: 'attack_left_2'
+            },
+            {
+                ROTATION_RIGHT: 'attack_right_3',
+                ROTATION_LEFT: 'attack_left_3'
+            }
+        )
+
+        self.image = self.frames['idle_right'][0]
+        self.mask = pygame.mask.Mask(self.rect.size, False)
+        self.space_mask_right = 5
+        self.space_mask_left = 18
+        self.space_mask_up = 18
+        self.space_mask_bottom = 5
+        for x in range(self.rect.width):
+            for y in range(self.rect.height):
+                if (self.space_mask_left <= x <= self.rect.width - self.space_mask_right
+                        and self.space_mask_up <= y <= self.rect.height - self.space_mask_bottom):
+                    self.mask.set_at((x, y), 1)
+        self.xvel = choice((-MOVE_SPEED * 0.3, MOVE_SPEED * 0.3))
+
+    def update(self, *args):
+        self.update_sprite_image()
+        if not self.onGround:
+            self.yvel += GRAVITY
+        self.onGround = False
+        self.rect.y += self.yvel
+        self.collide(0, self.yvel, self.space_mask_right, self.space_mask_left,
+                     self.space_mask_up, self.space_mask_bottom, reverse_x=True)
+        self.rect.x += self.xvel
+        self.collide(self.xvel, 0, self.space_mask_right, self.space_mask_left,
+                     self.space_mask_up, self.space_mask_bottom, reverse_x=True)
+
+    def update_sprite_image(self):
+        pass
 
 
 class Tile(pygame.sprite.Sprite):
@@ -343,6 +428,8 @@ def generate_level(number_level):
                 else:
                     print('Fatal Error: The player has already been created before')
                     terminate()
+            elif level_map[y][x] == '!':
+                Enemy(ememy_sheet, x, y)
             elif level_map[y][x] != '#' and level_map[y][x] != ' ':
                 Tile(level_map[y][x], x, y)
             current_tile += 1
@@ -358,15 +445,14 @@ load_level_font = pygame.font.Font(None, 150)
 background_image = load_image(background_path)
 background_image = pygame.transform.scale(background_image, SIZE)
 
-if TILE_SIZE == 48:
-    player_sheet = load_image(os.path.join(player_texture_folder, 'textures_48.png'))
-elif TILE_SIZE == 32:
-    player_sheet = load_image(os.path.join(player_texture_folder, 'textures_32.png'))
+player_sheet = load_image(player_texture_path)
+ememy_sheet = load_image(enemy_texture_path)
 
 all_sprite = pygame.sprite.Group()
 levels_group = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.GroupSingle()
+enemy_group = pygame.sprite.Group()
 
 start_game()
 
@@ -406,6 +492,8 @@ while True:
     player_group.draw(screen)
     if frames % 3 == 0:
         player.update(left, right, up)
+        for enemy in enemy_group.sprites():
+            enemy.update()
     camera.update(player)
     for sprite in all_sprite.sprites():
         camera.apply(sprite)
