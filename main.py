@@ -49,6 +49,8 @@ class Camera:
     def __init__(self):
         self.dx = 0
         self.dy = 0
+        self.memory_dx = 0
+        self.memory_dy = 0
 
     # сдвинуть объект obj на смещение камеры
     def apply(self, obj):
@@ -59,6 +61,21 @@ class Camera:
     def update(self, target):
         self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
         self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
+        self.memory_dx += self.dx
+        self.memory_dy += self.dy
+
+    def set_memory(self, x, y):
+        self.memory_dx = x
+        self.memory_dy = y
+
+    def get_memory(self):
+        return self.memory_dx, self.memory_dy
+
+    def get_memory_x(self):
+        return self.memory_dx
+
+    def get_memory_y(self):
+        return self.memory_dy
 
 
 class GamePerson(pygame.sprite.Sprite):
@@ -105,12 +122,19 @@ class GamePerson(pygame.sprite.Sprite):
         return frames
 
     def attack(self):
-        self.attack_group = choice(self.attack_groups)
-        self.cut_frame_update = 0
+        if not self.attack_group and not self.damage_mode and not self.death_mode:
+            self.attack_group = choice(self.attack_groups)
+            self.cut_frame_update = 0
 
     def damage(self):
-        self.damage_mode = True
-        self.cut_frame_update = 0
+        if not self.damage_mode and not self.attack_group and not self.death_mode:
+            self.damage_mode = True
+            self.cut_frame_update = 0
+
+    def death(self):
+        if not self.death_mode and not self.attack_group and not self.damage_mode:
+            self.death_mode = True
+            self.cut_frame_update = 0
 
     def update_sprite_image(self):
         if self.xvel > 0:
@@ -119,11 +143,20 @@ class GamePerson(pygame.sprite.Sprite):
             self.rotation = ROTATION_LEFT
         if self.cut_frame % 5 == 0:
             if self.rotation == ROTATION_RIGHT:
-                if self.damage_mode:
+                if self.death_mode:
+                    self.image = self.frames['death_right'][self.cut_frame_update]
+                    if self.cut_frame_update == len(self.frames['death_right']) - 1:
+                        self.death_mode = False
+                        self.cut_frame_update = 0
+                        self.kill()
+
+                elif self.damage_mode:
                     self.image = self.frames['damage_right'][self.cut_frame_update]
                     if self.cut_frame_update == len(self.frames['damage_right']) - 1:
                         self.damage_mode = False
                         self.cut_frame_update = 0
+                        if isinstance(self, Player):
+                            self.spawn_check_point()
 
                 elif self.attack_group:
                     self.image = self.frames[self.attack_group[ROTATION_RIGHT]][
@@ -148,11 +181,20 @@ class GamePerson(pygame.sprite.Sprite):
                         self.cut_frame_update % len(self.frames['run_right'])]
 
             elif self.rotation == ROTATION_LEFT:
-                if self.damage_mode:
+                if self.death_mode:
+                    self.image = self.frames['death_left'][self.cut_frame_update]
+                    if self.cut_frame_update == len(self.frames['death_left']) - 1:
+                        self.death_mode = False
+                        self.cut_frame_update = 0
+                        self.kill()
+
+                elif self.damage_mode:
                     self.image = self.frames['damage_left'][self.cut_frame_update]
                     if self.cut_frame_update == len(self.frames['damage_left']) - 1:
                         self.damage_mode = False
                         self.cut_frame_update = 0
+                        if isinstance(self, Player):
+                            self.spawn_check_point()
 
                 elif self.attack_group:
                     self.image = self.frames[self.attack_group[ROTATION_LEFT]][
@@ -182,6 +224,7 @@ class GamePerson(pygame.sprite.Sprite):
 class Player(GamePerson):
     def __init__(self, sheet, x, y):
         super().__init__(x, y, all_sprite, player_group)
+        self.check_point = (self.rect.x, self.rect.y)
         self.frames = {
             'idle_right': self.cut_sheet(sheet, 13, 1, 48, 48),
             'run_right': self.cut_sheet(sheet, 8, 2, 48, 48),
@@ -221,7 +264,7 @@ class Player(GamePerson):
         self.space_mask_left = 18
         self.space_mask_up = 18
         self.space_mask_bottom = 5
-        self.lives = 30000
+        self.lives = 100000
         for x in range(self.rect.width):
             for y in range(self.rect.height):
                 if (self.space_mask_left <= x <= self.rect.width - self.space_mask_right
@@ -233,13 +276,11 @@ class Player(GamePerson):
             self.xvel = -MOVE_SPEED
         if right:
             self.xvel = MOVE_SPEED
-        if not (left or right):
+        if not (left or right) or self.damage_mode or self.death_mode:
             self.xvel = 0
         if up:
             if self.onGround:
                 self.yvel = -JUMP_POWER
-        self.check_collide_enemy()
-        self.update_sprite_image()
         if not self.onGround:
             self.yvel += GRAVITY
         self.onGround = False
@@ -249,22 +290,25 @@ class Player(GamePerson):
         self.rect.x += self.xvel
         self.collide(self.xvel, 0, self.space_mask_right, self.space_mask_left,
                      self.space_mask_up, self.space_mask_bottom)
+        self.check_collide_enemy()
+        self.update_sprite_image()
 
     def check_collide_enemy(self):
         for enemy in pygame.sprite.spritecollide(self, enemy_group, False,
-                                                 collided=pygame.sprite.collide_rect):
-            if not self.attack_group and not self.damage_mode:
-                enemy.cut_frame_update = 0
-                if self.attack_group:
-                    enemy.death_mode = True
+                                                 collided=pygame.sprite.collide_mask):
+            if self.attack_group:
+                enemy.death()
+            else:
+                self.lives -= 1
+                if self.lives > 0:
+                    self.damage()
                 else:
-                    self.cut_frame_update = 0
-                    self.lives -= 1
-                    if self.lives > 0:
-                        self.damage_mode = True
-                    else:
-                        self.death_mode = True
-                    enemy.attack()
+                    self.death()
+                enemy.attack()
+
+    def spawn_check_point(self):
+        self.rect.x += camera.get_memory_x()
+        self.rect.y += camera.get_memory_y()
 
 
 class Enemy(GamePerson):
@@ -317,7 +361,7 @@ class Enemy(GamePerson):
                 if (self.space_mask_left <= x <= self.rect.width - self.space_mask_right
                         and self.space_mask_up <= y <= self.rect.height - self.space_mask_bottom):
                     self.mask.set_at((x, y), 1)
-        self.xvel = ENEMY_MOVE_SPEED
+        self.xvel = choice((-ENEMY_MOVE_SPEED, ENEMY_MOVE_SPEED))
 
     def update(self, *args):
         self.update_sprite_image()
@@ -491,6 +535,11 @@ left, right, up = False, False, False
 
 frames = 0
 
+camera.update(player)
+for sprite in all_sprite.sprites():
+    camera.apply(sprite)
+camera.set_memory(0, 0)
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -512,6 +561,8 @@ while True:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 player.attack()
+            elif event.button == pygame.BUTTON_RIGHT:
+                camera.set_memory(0, 0)
     screen.blit(background_image, (0, 0))
     if frames % 2 == 0:
         player.update(left, right, up)
