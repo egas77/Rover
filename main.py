@@ -13,8 +13,6 @@ screen_rect = screen.get_rect()
 
 TILE_SIZE = 48
 
-OFFSET_RECT_PLAYER = 10
-
 ROTATION_LEFT = 0
 ROTATION_RIGHT = 1
 
@@ -28,13 +26,73 @@ FPS = 100
 BACKGROUND_SOUND_VOLUME = 0.5
 MUSIC_ON = False
 
-element_texture_folder = 'data\\textures\\png\\elements'
-tiles_texture_folder = 'data\\textures\\png\\tiles'
-icons_folder = 'data\\textures\\icons'
-music_folder = 'data\\music'
-levels_folder = 'data\\levels'
-player_texture_path = 'data\\textures\\player\\textures_48.png'
-enemy_texture_path = 'data\\textures\\enemy\\textures_48.png'
+ELEMENT_TEXTURE_FOLDER = 'data\\textures\\png\\elements'
+TILES_TEXTURE_FOLDER = 'data\\textures\\png\\tiles'
+ICONS_FOLDER = 'data\\textures\\icons'
+MUSIC_FOLDER = 'data\\music'
+LEVELS_FOLDER = 'data\\levels'
+PLAYER_TEXTURE_PATH = 'data\\textures\\player\\textures_48.png'
+ENEMY_TEXTURE_PATH = 'data\\textures\\enemy\\textures_48.png'
+
+GAME_OBJECTS_DICT = {
+    '!': ('blade.png',
+          {'collided': True, 'collided_do_kill': True, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 96)}),
+    '$': ('bush1.png',
+          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 48)}),
+    '%': ('bush2.png',
+          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 48)}),
+    '^': ('button.png',
+          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 12)}),
+    ':': ('cell.png',
+          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 48)}),
+    '&': ('door.png',
+          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 48)}),
+    '1': ('flower1.png',
+          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 48)}),
+    '2': ('flower2.png',
+          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 48)}),
+    '3': ('flower3.png',
+          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 48)}),
+    '4': ('flower4.png',
+          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 48)}),
+    '5': ('flower5.png',
+          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 48)}),
+    '6': ('heart.png',
+          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (32, 32)}),
+    '7': ('key.png',
+          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 48)}),
+    '8': ('box1.png',
+          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': False, 'size': (48, 48)}),
+    '9': ('tree1.png',
+          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 48)}),
+    '0': ('tree2.png',
+          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 48)}),
+    '*': ('pointer.png',
+          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (48, 48)}),
+    '/': ('zero_enemy.png',
+          {'collided': True, 'collided_do_kill': False, 'ignore_player': True,
+           'ignore_enemy': False, 'size': (48, 48)}),
+    '\\': ('zero_player.png',
+           {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
+            'ignore_enemy': True, 'size': (48, 48)})
+}
 
 
 def load_image(path, color_key=None):
@@ -96,7 +154,7 @@ class GameObject(pygame.sprite.Sprite):
         self.is_tile = is_tile
         if not is_tile:
             if file_name not in self.images:
-                image = load_image(os.path.join(element_texture_folder, file_name))
+                image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, file_name))
                 if file_name == 'blade.png':
                     image = pygame.transform.scale(image, size)
                 else:
@@ -400,7 +458,7 @@ class Player(GamePerson):
 
 
 class HeartIcon(pygame.sprite.Sprite):
-    heart_image = load_image(os.path.join(element_texture_folder, 'heart.png'))
+    heart_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'heart.png'))
     width_heart = heart_image.get_width()
     space_x = 5
 
@@ -493,7 +551,7 @@ class Tile(GameObject):
         self.add(tiles_group)
         if tile_name not in self.images:
             image = load_image(
-                os.path.join(tiles_texture_folder, tile_name + '.png'))
+                os.path.join(TILES_TEXTURE_FOLDER, tile_name + '.png'))
             image = pygame.transform.scale(image, tile_size)
             self.images[tile_name] = image
         self.image = self.images[tile_name]
@@ -529,7 +587,7 @@ class ButtonJump(GameObject):
 class SelectLevelSprite(pygame.sprite.Sprite):
     font = pygame.font.Font(None, 100)
     size_sprite_level = (100, 100)
-    background_image_level = load_image(os.path.join(element_texture_folder, 'box1.png'))
+    background_image_level = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'box1.png'))
     background_image_level = pygame.transform.scale(background_image_level, size_sprite_level)
 
     def __init__(self, center_x, center_y, number_level):
@@ -637,7 +695,7 @@ def load_level(level_path):
 
 
 def generate_level(number_level):
-    level_path = os.path.join(levels_folder, str(number_level) + '.lvl')
+    level_path = os.path.join(LEVELS_FOLDER, str(number_level) + '.lvl')
     level_map = load_level(level_path)
     count_tiles = len(level_map * len(level_map[0]))
     percent_one_tile = count_tiles // 100
@@ -708,69 +766,9 @@ def generate_level(number_level):
             show_loading_level(current_tile // percent_one_tile)
 
 
-GAME_OBJECTS_DICT = {
-    '!': ('blade.png',
-          {'collided': True, 'collided_do_kill': True, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 96)}),
-    '$': ('bush1.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
-    '%': ('bush2.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
-    '^': ('button.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 12)}),
-    ':': ('cell.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
-    '&': ('door.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
-    '1': ('flower1.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
-    '2': ('flower2.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
-    '3': ('flower3.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
-    '4': ('flower4.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
-    '5': ('flower5.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
-    '6': ('heart.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (32, 32)}),
-    '7': ('key.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
-    '8': ('box1.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': False, 'size': (48, 48)}),
-    '9': ('tree1.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
-    '0': ('tree2.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
-    '*': ('pointer.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
-    '/': ('zero_enemy.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': True,
-           'ignore_enemy': False, 'size': (48, 48)}),
-    '\\': ('zero_player.png',
-           {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-            'ignore_enemy': True, 'size': (48, 48)})
-}
-
 background_chanel = pygame.mixer.Channel(0)
-background_menu_music = pygame.mixer.Sound(file=os.path.join(music_folder, 'menu_background.wav'))
-background_game_play_music = pygame.mixer.Sound(file=os.path.join(music_folder, 'background.wav'))
+background_menu_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'menu_background.wav'))
+background_game_play_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'background.wav'))
 
 clock = pygame.time.Clock()
 
@@ -778,15 +776,15 @@ tile_size = (TILE_SIZE, TILE_SIZE)
 
 load_level_font = pygame.font.Font(None, 150)
 
-background_image = load_image(os.path.join(element_texture_folder, 'background.png'))
+background_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'background.png'))
 background_image = pygame.transform.scale(background_image, SIZE)
-play_image = load_image(os.path.join(icons_folder, 'play.png'))
-music_on_image = load_image(os.path.join(icons_folder, 'music_on.png'))
-music_off_image = load_image(os.path.join(icons_folder, 'music_off.png'))
-name_game_image = load_image(os.path.join(element_texture_folder, 'name-game.png'))
+play_image = load_image(os.path.join(ICONS_FOLDER, 'play.png'))
+music_on_image = load_image(os.path.join(ICONS_FOLDER, 'music_on.png'))
+music_off_image = load_image(os.path.join(ICONS_FOLDER, 'music_off.png'))
+name_game_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'name-game.png'))
 
-player_sheet = load_image(player_texture_path)
-ememy_sheet = load_image(enemy_texture_path)
+player_sheet = load_image(PLAYER_TEXTURE_PATH)
+ememy_sheet = load_image(ENEMY_TEXTURE_PATH)
 
 all_sprite = pygame.sprite.Group()
 levels_group = pygame.sprite.Group()
