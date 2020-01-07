@@ -26,7 +26,7 @@ GRAVITY = 1
 FPS = 100
 
 BACKGROUND_SOUND_VOLUME = 0.5
-MUSIC_ON = True
+MUSIC_ON = False
 
 element_texture_folder = 'data\\textures\\png\\elements'
 tiles_texture_folder = 'data\\textures\\png\\tiles'
@@ -134,11 +134,19 @@ class GamePerson(pygame.sprite.Sprite):
             if isinstance(self, Player):
                 if game_object.ignore_player:
                     continue
-                elif isinstance(game_object, Heart):
+                if game_object.collision_do_kill:
+                    if not self.damage_mode and not self.death_mode:
+                        self.lives -= 1
+                        if self.lives > 0:
+                            self.damage()
+                        else:
+                            self.death()
+                if isinstance(game_object, Heart):
                     self.lives += 1
                     game_object.kill()
                     self.visible_hearts()
-                elif isinstance(game_object, CheckPoint):
+                    continue
+                if isinstance(game_object, CheckPoint):
                     camera.set_memory(0, 0)
                     width, height = game_object.rect.size
                     image = game_object.image
@@ -150,18 +158,11 @@ class GamePerson(pygame.sprite.Sprite):
                             game_object.mask = pygame.mask.Mask((width, height), fill=0)
                             game_object.collision = False
                             game_object.collision_do_kill = False
-                elif isinstance(game_object, ButtonJump):
+                    continue
+                if isinstance(game_object, ButtonJump):
                     if yvel:
                         self.yvel = -JUMP_POWER * 1.25
                     return None
-
-                if game_object.collision_do_kill:
-                    if not self.damage_mode and not self.death_mode:
-                        self.lives -= 1
-                        if self.lives > 0:
-                            self.damage()
-                        else:
-                            self.death()
             else:
                 if game_object.ignore_enemy:
                     continue
@@ -501,15 +502,15 @@ class Tile(GameObject):
 
 
 class Heart(GameObject):
-    def __init__(self, x, y, file_name=None, collision=False, collision_do_kill=False,
-                 ignore_player=False, ignore_enemy=True, size=(48, 48)):
+    def __init__(self, x, y, file_name='heart.png', collision=True, collision_do_kill=False,
+                 ignore_player=False, ignore_enemy=True, size=(32, 32)):
         super().__init__(x, y, file_name=file_name, collision=collision,
                          collision_do_kill=collision_do_kill, ignore_player=ignore_player,
                          ignore_enemy=ignore_enemy, size=size)
 
 
 class CheckPoint(GameObject):
-    def __init__(self, x, y, file_name=None, collision=False, collision_do_kill=False,
+    def __init__(self, x, y, file_name='pointer.png', collision=True, collision_do_kill=False,
                  ignore_player=False, ignore_enemy=True, size=(48, 48)):
         super().__init__(x, y, file_name=file_name, collision=collision,
                          collision_do_kill=collision_do_kill, ignore_player=ignore_player,
@@ -517,8 +518,8 @@ class CheckPoint(GameObject):
 
 
 class ButtonJump(GameObject):
-    def __init__(self, x, y, file_name=None, collision=False, collision_do_kill=False,
-                 ignore_player=False, ignore_enemy=True, size=(48, 48)):
+    def __init__(self, x, y, file_name='button.png', collision=True, collision_do_kill=False,
+                 ignore_player=False, ignore_enemy=True, size=(48, 12)):
         super().__init__(x, y, file_name=file_name, collision=collision,
                          collision_do_kill=collision_do_kill, ignore_player=ignore_player,
                          ignore_enemy=ignore_enemy, size=size)
@@ -576,6 +577,8 @@ def start_game():
                     if start_btn.rect.collidepoint(pos):
                         number_level = select_level()
                         generate_level(number_level)
+                        if MUSIC_ON:
+                            background_chanel.play(background_game_play_music, loops=-1)
                         return None
                     elif music_btn.rect.collidepoint(pos):
                         if MUSIC_ON:
@@ -643,6 +646,7 @@ def generate_level(number_level):
     current_tile = 0
     for y in range(len(level_map)):
         for x in range(len(level_map[0])):
+            print(level_map[y][x])
             if level_map[y][x] == '@':
                 if not player_group.sprite:
                     Player(player_sheet, x, y)
@@ -707,7 +711,7 @@ def generate_level(number_level):
 GAME_OBJECTS_DICT = {
     '!': ('blade.png',
           {'collided': True, 'collided_do_kill': True, 'ignore_player': False,
-           'ignore_enemy': False, 'size': (48, 96)}),
+           'ignore_enemy': True, 'size': (48, 96)}),
     '$': ('bush1.png',
           {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
            'ignore_enemy': True, 'size': (48, 48)}),
@@ -757,15 +761,16 @@ GAME_OBJECTS_DICT = {
           {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
            'ignore_enemy': True, 'size': (48, 48)}),
     '/': ('zero_enemy.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': True,
+          {'collided': True, 'collided_do_kill': False, 'ignore_player': True,
            'ignore_enemy': False, 'size': (48, 48)}),
     '\\': ('zero_player.png',
-           {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
+           {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
             'ignore_enemy': True, 'size': (48, 48)})
 }
 
 background_chanel = pygame.mixer.Channel(0)
 background_menu_music = pygame.mixer.Sound(file=os.path.join(music_folder, 'menu_background.wav'))
+background_game_play_music = pygame.mixer.Sound(file=os.path.join(music_folder, 'background.wav'))
 
 clock = pygame.time.Clock()
 
