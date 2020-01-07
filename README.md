@@ -26,7 +26,7 @@
 "1" - flower1.png  
 "2" - flower2.png  
 "3" - flower3.png  
-"4" - flower4.png
+"4" - flower4.png  
 "5" - flower5.png  
 "6" - heart.png  
 "7" - key.png  
