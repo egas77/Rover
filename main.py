@@ -26,8 +26,8 @@ FPS = 100
 BACKGROUND_SOUND_VOLUME = 0.5
 MUSIC_ON = False
 
-ELEMENT_TEXTURE_FOLDER = 'data\\textures\\png\\elements'
-TILES_TEXTURE_FOLDER = 'data\\textures\\png\\tiles'
+ELEMENT_TEXTURE_FOLDER = 'data\\textures\\elements'
+TILES_TEXTURE_FOLDER = 'data\\textures\\tiles'
 ICONS_FOLDER = 'data\\textures\\icons'
 MUSIC_FOLDER = 'data\\music'
 LEVELS_FOLDER = 'data\\levels'
@@ -217,9 +217,14 @@ class GamePerson(pygame.sprite.Sprite):
                             game_object.collision = False
                             game_object.collision_do_kill = False
                     continue
+                if isinstance(game_object, Key):
+                    game_object.kill()
+                    self.key = True
+                    self.visible_key()
+                    continue
                 if isinstance(game_object, ButtonJump):
                     if yvel:
-                        self.yvel = -JUMP_POWER * 1.25
+                        self.yvel = -JUMP_POWER * 1.35
                     return None
             else:
                 if game_object.ignore_enemy:
@@ -392,7 +397,8 @@ class Player(GamePerson):
         self.space_mask_left = 18
         self.space_mask_up = 18
         self.space_mask_bottom = 5
-        self.lives = 5
+        self.lives = 3
+        self.key = False
         for x in range(self.rect.width):
             for y in range(self.rect.height):
                 if (self.space_mask_left <= x <= self.rect.width - self.space_mask_right
@@ -456,16 +462,29 @@ class Player(GamePerson):
         for x in range(self.lives):
             HeartIcon(x)
 
+    def visible_key(self):
+        KeyIcon()
+
 
 class HeartIcon(pygame.sprite.Sprite):
-    heart_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'heart.png'))
-    width_heart = heart_image.get_width()
+    image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'heart.png'))
+    width_heart = image.get_width()
     space_x = 5
 
     def __init__(self, x):
         super().__init__(hearts_group)
-        self.image = self.heart_image
+        self.image = self.image
         self.rect = self.image.get_rect(x=x * self.width_heart + self.space_x * (x + 1), y=10)
+
+
+class KeyIcon(pygame.sprite.Sprite):
+    image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'key.png'))
+    image = pygame.transform.scale(image, (48, 48))
+
+    def __init__(self):
+        super().__init__(key_group)
+        self.image = self.image
+        self.rect = self.image.get_rect(x=WIDTH - 70, y=20)
 
 
 class Enemy(GamePerson):
@@ -552,15 +571,26 @@ class Tile(GameObject):
         if tile_name not in self.images:
             image = load_image(
                 os.path.join(TILES_TEXTURE_FOLDER, tile_name + '.png'))
-            image = pygame.transform.scale(image, tile_size)
+            if tile_name == 'k':
+                image = pygame.transform.scale(image, (TILE_SIZE, TILE_SIZE // 2))
+            else:
+                image = pygame.transform.scale(image, (TILE_SIZE, TILE_SIZE))
             self.images[tile_name] = image
         self.image = self.images[tile_name]
         self.rect = self.image.get_rect(x=tile_size[0] * x, y=tile_size[1] * y)
-        self.mask = pygame.mask.Mask(self.rect.size, fill=True)
+        self.mask = pygame.mask.from_surface(self.image)
 
 
 class Heart(GameObject):
     def __init__(self, x, y, file_name='heart.png', collision=True, collision_do_kill=False,
+                 ignore_player=False, ignore_enemy=True, size=(32, 32)):
+        super().__init__(x, y, file_name=file_name, collision=collision,
+                         collision_do_kill=collision_do_kill, ignore_player=ignore_player,
+                         ignore_enemy=ignore_enemy, size=size)
+
+
+class Key(GameObject):
+    def __init__(self, x, y, file_name='key.png', collision=True, collision_do_kill=False,
                  ignore_player=False, ignore_enemy=True, size=(32, 32)):
         super().__init__(x, y, file_name=file_name, collision=collision,
                          collision_do_kill=collision_do_kill, ignore_player=ignore_player,
@@ -704,7 +734,6 @@ def generate_level(number_level):
     current_tile = 0
     for y in range(len(level_map)):
         for x in range(len(level_map[0])):
-            print(level_map[y][x])
             if level_map[y][x] == '@':
                 if not player_group.sprite:
                     Player(player_sheet, x, y)
@@ -753,6 +782,13 @@ def generate_level(number_level):
                                collision_do_kill=collided_do_kill,
                                ignore_player=ignore_player,
                                ignore_enemy=ignore_enemy, size=size)
+                elif file_name == 'key.png':
+                    Key(x, y,
+                        file_name=file_name,
+                        collision=collided,
+                        collision_do_kill=collided_do_kill,
+                        ignore_player=ignore_player,
+                        ignore_enemy=ignore_enemy, size=size)
                 else:
                     GameObject(x, y,
                                file_name=file_name,
@@ -791,9 +827,10 @@ levels_group = pygame.sprite.Group()
 menu_group = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 game_objects = pygame.sprite.Group()
-player_group = pygame.sprite.GroupSingle()
 enemy_group = pygame.sprite.Group()
 hearts_group = pygame.sprite.Group()
+key_group = pygame.sprite.Group()
+player_group = pygame.sprite.GroupSingle()
 
 start_game()
 
@@ -845,6 +882,7 @@ while True:
     enemy_group.draw(screen)
     player_group.draw(screen)
     hearts_group.draw(screen)
+    key_group.draw(screen)
     pygame.display.flip()
     clock.tick(FPS)
     frames += 1
