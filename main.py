@@ -771,8 +771,6 @@ camera = Camera()
 player = player_group.sprite
 left, right, up = False, False, False
 
-print(game_objects.sprites())
-
 frames = 0
 
 camera.update(player)
