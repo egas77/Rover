@@ -53,6 +53,12 @@ GAME_OBJECTS_DICT = {
     '&': ('door.png',
           {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
            'ignore_enemy': True, 'size': (48, 48)}),
+    '+': ('coin.png',
+          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (32, 32)}),
+    '|': ('crystal.png',
+          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
+           'ignore_enemy': True, 'size': (32, 32)}),
     '1': ('flower1.png',
           {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
            'ignore_enemy': True, 'size': (48, 48)}),
@@ -73,7 +79,7 @@ GAME_OBJECTS_DICT = {
            'ignore_enemy': True, 'size': (32, 32)}),
     '7': ('key.png',
           {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
+           'ignore_enemy': True, 'size': (32, 32)}),
     '8': ('box1.png',
           {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
            'ignore_enemy': False, 'size': (48, 48)}),
@@ -221,6 +227,17 @@ class GamePerson(pygame.sprite.Sprite):
                     game_object.kill()
                     self.key = True
                     self.visible_key()
+                    continue
+                if isinstance(game_object, Door):
+                    if self.key:
+                        self.finish = True
+                if isinstance(game_object, Coin):
+                    self.coins += 1
+                    game_object.kill()
+                    continue
+                if isinstance(game_object, Crystal):
+                    self.crystals += 1
+                    game_object.kill()
                     continue
                 if isinstance(game_object, ButtonJump):
                     if yvel:
@@ -399,6 +416,9 @@ class Player(GamePerson):
         self.space_mask_bottom = 5
         self.lives = 3
         self.key = False
+        self.finish = False
+        self.coins = 0
+        self.crystals = 0
         for x in range(self.rect.width):
             for y in range(self.rect.height):
                 if (self.space_mask_left <= x <= self.rect.width - self.space_mask_right
@@ -597,6 +617,30 @@ class Key(GameObject):
                          ignore_enemy=ignore_enemy, size=size)
 
 
+class Door(GameObject):
+    def __init__(self, x, y, file_name='door.png', collision=True, collision_do_kill=False,
+                 ignore_player=False, ignore_enemy=True, size=(48, 48)):
+        super().__init__(x, y, file_name=file_name, collision=collision,
+                         collision_do_kill=collision_do_kill, ignore_player=ignore_player,
+                         ignore_enemy=ignore_enemy, size=size)
+
+
+class Coin(GameObject):
+    def __init__(self, x, y, file_name='coin.png', collision=True, collision_do_kill=False,
+                 ignore_player=False, ignore_enemy=True, size=(32, 32)):
+        super().__init__(x, y, file_name=file_name, collision=collision,
+                         collision_do_kill=collision_do_kill, ignore_player=ignore_player,
+                         ignore_enemy=ignore_enemy, size=size)
+
+
+class Crystal(GameObject):
+    def __init__(self, x, y, file_name='crystal.png', collision=True, collision_do_kill=False,
+                 ignore_player=False, ignore_enemy=True, size=(32, 32)):
+        super().__init__(x, y, file_name=file_name, collision=collision,
+                         collision_do_kill=collision_do_kill, ignore_player=ignore_player,
+                         ignore_enemy=ignore_enemy, size=size)
+
+
 class CheckPoint(GameObject):
     def __init__(self, x, y, file_name='pointer.png', collision=True, collision_do_kill=False,
                  ignore_player=False, ignore_enemy=True, size=(48, 48)):
@@ -664,10 +708,10 @@ def start_game():
                 if event.button == pygame.BUTTON_LEFT:
                     if start_btn.rect.collidepoint(pos):
                         number_level = select_level()
-                        generate_level(number_level)
+                        coins, crystals = generate_level(number_level)
                         if MUSIC_ON:
                             background_chanel.play(background_game_play_music, loops=-1)
-                        return None
+                        return coins, crystals
                     elif music_btn.rect.collidepoint(pos):
                         if MUSIC_ON:
                             MUSIC_ON = False
@@ -732,6 +776,8 @@ def generate_level(number_level):
     if not percent_one_tile:
         percent_one_tile = 1
     current_tile = 0
+    coins = 0
+    crystals = 0
     for y in range(len(level_map)):
         for x in range(len(level_map[0])):
             if level_map[y][x] == '@':
@@ -789,6 +835,29 @@ def generate_level(number_level):
                         collision_do_kill=collided_do_kill,
                         ignore_player=ignore_player,
                         ignore_enemy=ignore_enemy, size=size)
+                elif file_name == 'door.png':
+                    Door(x, y,
+                         file_name=file_name,
+                         collision=collided,
+                         collision_do_kill=collided_do_kill,
+                         ignore_player=ignore_player,
+                         ignore_enemy=ignore_enemy, size=size)
+                elif file_name == 'coin.png':
+                    Coin(x, y,
+                         file_name=file_name,
+                         collision=collided,
+                         collision_do_kill=collided_do_kill,
+                         ignore_player=ignore_player,
+                         ignore_enemy=ignore_enemy, size=size)
+                    coins += 1
+                elif file_name == 'crystal.png':
+                    Crystal(x, y,
+                            file_name=file_name,
+                            collision=collided,
+                            collision_do_kill=collided_do_kill,
+                            ignore_player=ignore_player,
+                            ignore_enemy=ignore_enemy, size=size)
+                    crystals += 1
                 else:
                     GameObject(x, y,
                                file_name=file_name,
@@ -800,6 +869,7 @@ def generate_level(number_level):
                 Tile(level_map[y][x], x, y)
             current_tile += 1
             show_loading_level(current_tile // percent_one_tile)
+    return coins, crystals
 
 
 background_chanel = pygame.mixer.Channel(0)
@@ -832,7 +902,7 @@ hearts_group = pygame.sprite.Group()
 key_group = pygame.sprite.Group()
 player_group = pygame.sprite.GroupSingle()
 
-start_game()
+coins, crystals = start_game()
 
 camera = Camera()
 player = player_group.sprite

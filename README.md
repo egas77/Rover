@@ -23,6 +23,8 @@
 "^" - button.png  
 ":" - cell.png  
 "&" - door.png  
+"+" - coin.png  
+"|" - crystal.png    
 "1" - flower1.png  
 "2" - flower2.png  
 "3" - flower3.png  
