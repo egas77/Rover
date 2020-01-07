@@ -25,12 +25,16 @@ GRAVITY = 1
 
 FPS = 100
 
+BACKGROUND_SOUND_VOLUME = 0.5
+MUSIC_ON = True
+
 element_texture_folder = 'data\\textures\\png\\elements'
 tiles_texture_folder = 'data\\textures\\png\\tiles'
+icons_folder = 'data\\textures\\icons'
+music_folder = 'data\\music'
 levels_folder = 'data\\levels'
 player_texture_path = 'data\\textures\\player\\textures_48.png'
 enemy_texture_path = 'data\\textures\\enemy\\textures_48.png'
-background_path = os.path.join(element_texture_folder, 'background.png')
 
 
 def load_image(path, color_key=None):
@@ -547,28 +551,42 @@ def terminate():
 
 
 def start_game():
-    start_game_screen = pygame.Surface(SIZE)
-    start_game_screen.set_colorkey(start_game_screen.get_at((0, 0)))
-    button_radius = 50
-    button_rect = pygame.Rect(WIDTH // 2 - button_radius, HEIGHT // 2 - button_radius + 100,
-                              button_radius * 2, button_radius * 2)
-    pygame.draw.circle(start_game_screen, pygame.Color(250, 250, 232),
-                       button_rect.center, button_radius)
-    name_game = load_image(os.path.join(element_texture_folder, 'name-game.png'))
-    start_game_screen.blit(name_game, (0, 0))
+    global MUSIC_ON
+    start_btn = pygame.sprite.Sprite(menu_group)
+    start_btn.image = play_image
+    start_btn.rect = start_btn.image.get_rect(x=WIDTH // 2 - start_btn.image.get_width() // 2 + 100,
+                                              y=HEIGHT // 2 + 30)
+    music_btn = pygame.sprite.Sprite(menu_group)
+    if MUSIC_ON:
+        music_btn.image = music_on_image
+        background_chanel.play(background_menu_music, loops=-1)
+    else:
+        music_btn.image = music_off_image
+    music_btn.rect = music_btn.image.get_rect(x=WIDTH // 2 - start_btn.image.get_width() // 2 - 100,
+                                              y=HEIGHT // 2 + 30)
     screen.blit(background_image, (0, 0))
-    screen.blit(start_game_screen, (0, 0))
-    pygame.display.flip()
+    screen.blit(name_game_image, (0, 0))
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if (event.button == pygame.BUTTON_LEFT and
-                        button_rect.collidepoint(event.pos[0], event.pos[1])):
+                pos = event.pos
+                if start_btn.rect.collidepoint(pos):
                     number_level = select_level()
                     generate_level(number_level)
                     return None
+                elif music_btn.rect.collidepoint(pos):
+                    if MUSIC_ON:
+                        MUSIC_ON = False
+                        music_btn.image = music_off_image
+                        background_chanel.stop()
+                    else:
+                        MUSIC_ON = True
+                        music_btn.image = music_on_image
+                        background_chanel.play(background_menu_music, loops=-1)
+        menu_group.draw(screen)
+        pygame.display.flip()
 
 
 def select_level():
@@ -745,20 +763,28 @@ GAME_OBJECTS_DICT = {
             'ignore_enemy': True, 'size': (48, 48)})
 }
 
+background_chanel = pygame.mixer.Channel(0)
+background_menu_music = pygame.mixer.Sound(file=os.path.join(music_folder, 'menu_background.wav'))
+
 clock = pygame.time.Clock()
 
 tile_size = (TILE_SIZE, TILE_SIZE)
 
 load_level_font = pygame.font.Font(None, 150)
 
-background_image = load_image(background_path)
+background_image = load_image(os.path.join(element_texture_folder, 'background.png'))
 background_image = pygame.transform.scale(background_image, SIZE)
+play_image = load_image(os.path.join(icons_folder, 'play.png'))
+music_on_image = load_image(os.path.join(icons_folder, 'music_on.png'))
+music_off_image = load_image(os.path.join(icons_folder, 'music_off.png'))
+name_game_image = load_image(os.path.join(element_texture_folder, 'name-game.png'))
 
 player_sheet = load_image(player_texture_path)
 ememy_sheet = load_image(enemy_texture_path)
 
 all_sprite = pygame.sprite.Group()
 levels_group = pygame.sprite.Group()
+menu_group = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 game_objects = pygame.sprite.Group()
 player_group = pygame.sprite.GroupSingle()
