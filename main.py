@@ -94,7 +94,7 @@ class GameObject(pygame.sprite.Sprite):
                 else:
                     image = pygame.transform.scale(image, size)
                 self.images[file_name] = image
-            self.image = self.images[file_name]
+            self.image = self.images[file_name].copy()
             self.rect = self.image.get_rect(x=tile_size[0] * x, y=tile_size[1] * y)
             if collision:
                 self.mask = pygame.mask.Mask(self.rect.size, 1)
@@ -129,6 +129,18 @@ class GamePerson(pygame.sprite.Sprite):
                     self.lives += 1
                     game_object.kill()
                     self.visible_hearts()
+                elif isinstance(game_object, CheckPoint):
+                    camera.set_memory(0, 0)
+                    width, height = game_object.rect.size
+                    image = game_object.image
+                    for y in range(width):
+                        for x in range(height):
+                            pixel = image.get_at((x, y))
+                            if pixel.a != 0:
+                                image.set_at((x, y), (100, 100, 100, 200))
+                            game_object.mask = pygame.mask.Mask((width, height), fill=0)
+                            game_object.collision = False
+                            game_object.collision_do_kill = False
 
                 if game_object.collision_do_kill:
                     if not self.damage_mode and not self.death_mode:
@@ -482,6 +494,13 @@ class Heart(GameObject):
                          collision_do_kill=collision_do_kill, size=size)
 
 
+class CheckPoint(GameObject):
+    def __init__(self, x, y, file_name=None, collision=False, collision_do_kill=False,
+                 size=(48, 48)):
+        super().__init__(x, y, file_name=file_name, collision=collision,
+                         collision_do_kill=collision_do_kill, size=size)
+
+
 class SelectLevelSprite(pygame.sprite.Sprite):
     font = pygame.font.Font(None, 100)
     size_sprite_level = (100, 100)
@@ -609,6 +628,8 @@ def generate_level(number_level):
                     size = tile_size
                 if file_name == 'heart.png':
                     Heart(x, y, file_name, collided, collided_do_kill, size)
+                elif file_name == 'pointer.png':
+                    CheckPoint(x, y, file_name, collided, collided_do_kill, size)
                 else:
                     GameObject(x, y, file_name, collided, collided_do_kill, size)
             elif level_map[y][x] != '#' and level_map[y][x] != ' ':
@@ -628,12 +649,13 @@ GAME_OBJECTS_DICT = {
     '2': ('flower2.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
     '3': ('flower3.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
     '4': ('flower4.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
-    '5': ('flower5.png', {'collided': False, 'collided_do_kill': False, 'size': (24, 24)}),
+    '5': ('flower5.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
     '6': ('heart.png', {'collided': True, 'collided_do_kill': False, 'size': (32, 32)}),
     '7': ('key.png', {'collided': True, 'collided_do_kill': False, 'size': (48, 48)}),
     '8': ('box1.png', {'collided': True, 'collided_do_kill': False, 'size': (48, 48)}),
     '9': ('tree1.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
     '0': ('tree2.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
+    '*': ('pointer.png', {'collided': True, 'collided_do_kill': False, 'size': (48, 48)}),
     '/': ('zero.png', {'collided': True, 'collided_do_kill': False, 'size': (48, 48)})
 }
 
@@ -691,8 +713,6 @@ while True:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 player.attack()
-            elif event.button == pygame.BUTTON_RIGHT:
-                camera.set_memory(0, 0)
     screen.blit(background_image, (0, 0))
     if frames % 2 == 0:
         if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
