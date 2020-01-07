@@ -572,19 +572,20 @@ def start_game():
                 terminate()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 pos = event.pos
-                if start_btn.rect.collidepoint(pos):
-                    number_level = select_level()
-                    generate_level(number_level)
-                    return None
-                elif music_btn.rect.collidepoint(pos):
-                    if MUSIC_ON:
-                        MUSIC_ON = False
-                        music_btn.image = music_off_image
-                        background_chanel.stop()
-                    else:
-                        MUSIC_ON = True
-                        music_btn.image = music_on_image
-                        background_chanel.play(background_menu_music, loops=-1)
+                if event.button == pygame.BUTTON_LEFT:
+                    if start_btn.rect.collidepoint(pos):
+                        number_level = select_level()
+                        generate_level(number_level)
+                        return None
+                    elif music_btn.rect.collidepoint(pos):
+                        if MUSIC_ON:
+                            MUSIC_ON = False
+                            music_btn.image = music_off_image
+                            background_chanel.stop()
+                        else:
+                            MUSIC_ON = True
+                            music_btn.image = music_on_image
+                            background_chanel.play(background_menu_music, loops=-1)
         menu_group.draw(screen)
         pygame.display.flip()
 
