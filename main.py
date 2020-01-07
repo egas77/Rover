@@ -79,6 +79,30 @@ class Camera:
         return self.memory_dy
 
 
+class GameObject(pygame.sprite.Sprite):
+    images = dict()
+
+    def __init__(self, x, y, file_name=None, collision=False, collision_do_kill=False,
+                 size=(48, 48), is_tile=False):
+        super().__init__(game_objects, all_sprite)
+        self.collision_do_kill = False
+        if not is_tile:
+            if file_name not in self.images:
+                image = load_image(os.path.join(element_texture_folder, file_name))
+                if file_name == 'blade.png':
+                    image = pygame.transform.scale(image, size)
+                else:
+                    image = pygame.transform.scale(image, size)
+                self.images[file_name] = image
+            self.image = self.images[file_name]
+            self.rect = self.image.get_rect(x=tile_size[0] * x, y=tile_size[1] * y)
+            if collision:
+                self.mask = pygame.mask.Mask(self.rect.size, 1)
+                self.collision_do_kill = collision_do_kill
+            else:
+                self.mask = pygame.mask.Mask(self.rect.size, 0)
+
+
 class GamePerson(pygame.sprite.Sprite):
     def __init__(self, x, y, *groups):
         super().__init__(groups)
@@ -97,20 +121,38 @@ class GamePerson(pygame.sprite.Sprite):
     def collide(self, xvel, yvel,
                 space_mask_right, space_mask_left, space_mask_up, space_mask_bottom,
                 reverse_x=False):
-        for tile in pygame.sprite.spritecollide(self, tiles_group, False,
-                                                collided=pygame.sprite.collide_mask):
+        for game_object in pygame.sprite.spritecollide(self, game_objects, False,
+                                                       collided=pygame.sprite.collide_mask):
+
+            if isinstance(self, Player):
+                if isinstance(game_object, Heart):
+                    self.lives += 1
+                    game_object.kill()
+                    self.visible_hearts()
+
+                if game_object.collision_do_kill:
+                    if not self.damage_mode and not self.death_mode:
+                        self.lives -= 1
+                        if self.lives > 0:
+                            self.damage()
+                        else:
+                            self.death()
+            else:
+                if game_object.collision_do_kill:
+                    self.xvel = -self.xvel
+
             if reverse_x and xvel != 0:
                 self.xvel = -self.xvel
             if xvel > 0:  # если движется вправо
-                self.rect.right = tile.rect.left + space_mask_right - 1  # то не движется вправо
+                self.rect.right = game_object.rect.left + space_mask_right - 1  # то не движется вправо
             if xvel < 0:  # если движется влево
-                self.rect.left = tile.rect.right - space_mask_left + 1  # то не движется влево
+                self.rect.left = game_object.rect.right - space_mask_left + 1  # то не движется влево
             if yvel > 0:  # если падает вниз
-                self.rect.bottom = tile.rect.top + space_mask_bottom - 1  # то не падает вниз
+                self.rect.bottom = game_object.rect.top + space_mask_bottom - 1  # то не падает вниз
                 self.onGround = True  # и становится на что-то твердое
                 self.yvel = 0
             if yvel < 0:  # если движется вверх
-                self.rect.top = tile.rect.bottom - space_mask_up + 1  # то не движется вверх
+                self.rect.top = game_object.rect.bottom - space_mask_up + 1  # то не движется вверх
                 self.yvel = 0  # и энергия прыжка пропадает
 
     def cut_sheet(self, sheet, columns, row, width_image, height_image):
@@ -328,10 +370,10 @@ class Player(GamePerson):
     def visible_hearts(self):
         hearts_group.empty()
         for x in range(self.lives):
-            Heart(x)
+            HeartIcon(x)
 
 
-class Heart(pygame.sprite.Sprite):
+class HeartIcon(pygame.sprite.Sprite):
     heart_image = load_image(os.path.join(element_texture_folder, 'heart.png'))
     width_heart = heart_image.get_width()
     space_x = 5
@@ -417,20 +459,27 @@ class Enemy(GamePerson):
         return False
 
 
-class Tile(pygame.sprite.Sprite):
+class Tile(GameObject):
     images = dict()
 
     def __init__(self, tile_name, x, y):
-        super().__init__(all_sprite, tiles_group)
+        super().__init__(x, y, is_tile=True)
         if tile_name not in self.images:
             image = load_image(
                 os.path.join(tiles_texture_folder, tile_name + '.png'))
             image = pygame.transform.scale(image, tile_size)
             self.images[tile_name] = image
-        self.tile_name = tile_name
         self.image = self.images[tile_name]
         self.rect = self.image.get_rect(x=tile_size[0] * x, y=tile_size[1] * y)
         self.mask = pygame.mask.Mask(self.rect.size, fill=True)
+
+
+class Heart(GameObject):
+
+    def __init__(self, x, y, file_name=None, collision=False, collision_do_kill=False,
+                 size=(48, 48)):
+        super().__init__(x, y, file_name=file_name, collision=collision,
+                         collision_do_kill=collision_do_kill, size=size)
 
 
 class SelectLevelSprite(pygame.sprite.Sprite):
@@ -546,11 +595,47 @@ def generate_level(number_level):
                 Enemy(ememy_sheet, x, y, ROTATION_RIGHT)
             elif level_map[y][x] == '<':
                 Enemy(ememy_sheet, x, y, ROTATION_LEFT)
+            elif level_map[y][x] in GAME_OBJECTS_DICT:
+                collided = False
+                collided_do_kill = False
+                file_name, args = GAME_OBJECTS_DICT[level_map[y][x]]
+                if 'collided' in args:
+                    collided = args['collided']
+                if 'collided_do_kill' in args:
+                    collided_do_kill = args['collided_do_kill']
+                if 'size' in args:
+                    size = args['size']
+                else:
+                    size = tile_size
+                if file_name == 'heart.png':
+                    Heart(x, y, file_name, collided, collided_do_kill, size)
+                else:
+                    GameObject(x, y, file_name, collided, collided_do_kill, size)
             elif level_map[y][x] != '#' and level_map[y][x] != ' ':
                 Tile(level_map[y][x], x, y)
             current_tile += 1
             show_loading_level(current_tile // percent_one_tile)
 
+
+GAME_OBJECTS_DICT = {
+    '!': ('blade.png', {'collided': True, 'collided_do_kill': True, 'size': (48, 96)}),
+    '$': ('bush1.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
+    '%': ('bush2.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
+    '^': ('button.png', {'collided': True, 'collided_do_kill': False, 'size': (48, 48)}),
+    ':': ('cell.png', {'collided': True, 'collided_do_kill': False, 'size': (48, 48)}),
+    '&': ('door.png', {'collided': True, 'collided_do_kill': False, 'size': (48, 48)}),
+    '1': ('flower1.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
+    '2': ('flower2.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
+    '3': ('flower3.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
+    '4': ('flower4.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
+    '5': ('flower5.png', {'collided': False, 'collided_do_kill': False, 'size': (24, 24)}),
+    '6': ('heart.png', {'collided': True, 'collided_do_kill': False, 'size': (32, 32)}),
+    '7': ('key.png', {'collided': True, 'collided_do_kill': False, 'size': (48, 48)}),
+    '8': ('box1.png', {'collided': True, 'collided_do_kill': False, 'size': (48, 48)}),
+    '9': ('tree1.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
+    '0': ('tree2.png', {'collided': False, 'collided_do_kill': False, 'size': (48, 48)}),
+    '/': ('zero.png', {'collided': True, 'collided_do_kill': False, 'size': (48, 48)})
+}
 
 clock = pygame.time.Clock()
 
@@ -567,6 +652,7 @@ ememy_sheet = load_image(enemy_texture_path)
 all_sprite = pygame.sprite.Group()
 levels_group = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
+game_objects = pygame.sprite.Group()
 player_group = pygame.sprite.GroupSingle()
 enemy_group = pygame.sprite.Group()
 hearts_group = pygame.sprite.Group()
@@ -619,6 +705,7 @@ while True:
         for sprite in all_sprite.sprites():
             camera.apply(sprite)
     tiles_group.draw(screen)
+    game_objects.draw(screen)
     enemy_group.draw(screen)
     player_group.draw(screen)
     hearts_group.draw(screen)
