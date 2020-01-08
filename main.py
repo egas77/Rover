@@ -192,6 +192,7 @@ class GamePerson(pygame.sprite.Sprite):
         self.cut_frame = 0
         self.cut_frame_update = 0
         self.moving = False
+        self.lose = False
 
     def collide(self, xvel, yvel,
                 space_mask_right, space_mask_left, space_mask_up, space_mask_bottom,
@@ -208,7 +209,6 @@ class GamePerson(pygame.sprite.Sprite):
                             self.damage()
                         else:
                             self.death()
-                            self.lose = True
                         self.visible_hearts()
                 if isinstance(game_object, Heart):
                     self.lives += 1
@@ -290,6 +290,7 @@ class GamePerson(pygame.sprite.Sprite):
     def death(self):
         if not self.death_mode and not self.attack_group and not self.damage_mode:
             self.death_mode = True
+            self.lose = True
             self.cut_frame_update = 0
 
     def update_sprite_image(self):
@@ -428,7 +429,6 @@ class Player(GamePerson):
         self.lives = 3
         self.key = False
         self.finish = False
-        self.lose = False
         self.coins = 0
         self.crystals = 0
         for x in range(self.rect.width):
@@ -473,6 +473,7 @@ class Player(GamePerson):
                     self.damage()
                 else:
                     self.death()
+                self.visible_hearts()
                 if self.rotation == enemy.rotation:
                     enemy.xvel = -enemy.xvel
                     if enemy.rotation == ROTATION_LEFT:
@@ -696,18 +697,18 @@ class GamePanel:
         self.surface = pygame.Surface((WIDTH // 3, HEIGHT))
         self.rect = self.surface.get_rect(x=WIDTH // 2 - self.surface.get_width() // 2,
                                           y=HEIGHT // 2 - self.surface.get_height() // 2)
-        self.surface.fill(pygame.color.Color('gray'))
-        self.surface.set_alpha(40)
+        self.surface.fill(pygame.color.Color(190, 201, 225))
+        self.surface.set_alpha(30)
 
     def init_buttons(self):
-        self.menu_btn = pygame.sprite.Sprite(finish_group)
+        self.menu_btn = pygame.sprite.Sprite(game_panel_group)
         self.menu_btn.image = self.menu_image
         self.menu_btn.rect = self.menu_btn.image.get_rect(
             x=self.surface.get_width() // 2 - self.menu_btn.image.get_width() // 2 - 80,
             y=self.surface.get_height() // 2 - self.menu_btn.image.get_height() // 2 + 150
         )
 
-        self.restart_level_btn = pygame.sprite.Sprite(finish_group)
+        self.restart_level_btn = pygame.sprite.Sprite(game_panel_group)
         self.restart_level_btn.image = self.restart_level_image
         self.restart_level_btn.rect = self.restart_level_btn.image.get_rect(
             x=self.surface.get_width() // 2 - self.restart_level_btn.image.get_width() // 2 + 80,
@@ -727,7 +728,7 @@ class GamePanel:
                             return MAIN_MENU
                         elif self.restart_level_btn.rect.collidepoint(pos):
                             return RESTART_LEVEL
-            finish_group.draw(self.surface)
+            game_panel_group.draw(self.surface)
             screen.blit(self.surface, self.rect.topleft)
             pygame.display.flip()
 
@@ -1052,8 +1053,8 @@ game_objects = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
 hearts_group = pygame.sprite.Group()
 key_group = pygame.sprite.Group()
+game_panel_group = pygame.sprite.Group()
 pause_group = pygame.sprite.Group()
-finish_group = pygame.sprite.Group()
 player_group = pygame.sprite.GroupSingle()
 
 background_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'background.png'))
@@ -1149,7 +1150,7 @@ while True:
         elif result == RESTART_LEVEL:
             player, coins, crystals = generate_level(number_level)
         left, right, up = False, False, False
-    if player.lose:
+    if player.lose and not player.death_mode:
         result = lose.show()
         if result == MAIN_MENU:
             player, coins, crystals, number_level = start_game()
