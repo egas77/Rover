@@ -1022,7 +1022,7 @@ class Level:
         return 1
 
     def get_progress(self):
-        return player.get_bonus() / level.get_bonus() * 100 // 1
+        return player.get_bonus() / self.get_bonus() * 100 // 1
 
 
 class Menu:
