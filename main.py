@@ -15,6 +15,8 @@ TILE_SIZE = 48
 
 ROTATION_LEFT = 0
 ROTATION_RIGHT = 1
+MAIN_MENU = 1
+RESTART_LEVEL = 2
 
 MOVE_SPEED = 7
 ENEMY_MOVE_SPEED = 1
@@ -231,6 +233,7 @@ class GamePerson(pygame.sprite.Sprite):
                 if isinstance(game_object, Door):
                     if self.key:
                         self.finish = True
+                    continue
                 if isinstance(game_object, Coin):
                     self.coins += 1
                     game_object.kill()
@@ -677,9 +680,10 @@ class SelectLevelSprite(pygame.sprite.Sprite):
 
 class Pause:
     play_image = load_image(os.path.join(ICONS_FOLDER, 'pause_play.png'))
-    menu_image = load_image(os.path.join(ICONS_FOLDER, 'menu_pause.png'))
+    menu_image = load_image(os.path.join(ICONS_FOLDER, 'menu.png'))
     music_on_image = load_image(os.path.join(ICONS_FOLDER, 'pause_music_on.png'))
     music_off_image = load_image(os.path.join(ICONS_FOLDER, 'pause_music_off.png'))
+    restart_level_image = load_image(os.path.join(ICONS_FOLDER, 'restart_level.png'))
 
     def __init__(self):
         self.surface = pygame.Surface((WIDTH // 3, HEIGHT))
@@ -688,28 +692,35 @@ class Pause:
 
         self.surface.fill(pygame.color.Color('gray'))
         self.surface.set_alpha(40)
-        self.init_button()
+        self.init_buttons()
 
-    def init_button(self):
+    def init_buttons(self):
         self.play_btn = pygame.sprite.Sprite(pause_group)
         self.play_btn.image = self.play_image
         self.play_btn.rect = self.play_btn.image.get_rect(
             x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2,
-            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 30
+            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 - 80 + 30
         )
 
         self.menu_btn = pygame.sprite.Sprite(pause_group)
         self.menu_btn.image = self.menu_image
         self.menu_btn.rect = self.menu_btn.image.get_rect(
-            x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2 - 80,
-            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 150
+            x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2 - 90,
+            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 50
         )
 
         self.music_btn = pygame.sprite.Sprite(pause_group)
         self.music_btn.image = self.music_on_image if MUSIC_ON else self.music_off_image
         self.music_btn.rect = self.music_btn.image.get_rect(
-            x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2 + 80,
-            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 150
+            x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2 + 90,
+            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 50
+        )
+
+        self.restart_level_btn = pygame.sprite.Sprite(pause_group)
+        self.restart_level_btn.image = self.restart_level_image
+        self.restart_level_btn.rect = self.restart_level_btn.image.get_rect(
+            x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2,
+            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 80 + 70
         )
 
     def show(self):
@@ -729,7 +740,7 @@ class Pause:
                         if self.play_btn.rect.collidepoint(pos):
                             return None
                         elif self.menu_btn.rect.collidepoint(pos):
-                            return 1
+                            return MAIN_MENU
                         elif self.music_btn.rect.collidepoint(pos):
                             if MUSIC_ON:
                                 self.music_btn.image = self.music_off_image
@@ -739,9 +750,69 @@ class Pause:
                                 self.music_btn.image = self.music_on_image
                                 MUSIC_ON = True
                                 background_chanel.play(background_game_play_music, loops=-1)
+                        elif self.restart_level_btn.rect.collidepoint(pos):
+                            return RESTART_LEVEL
             pause_group.draw(self.surface)
             screen.blit(self.surface, self.rect.topleft)
             pygame.display.flip()
+
+
+class Finish:
+    menu_image = load_image(os.path.join(ICONS_FOLDER, 'menu.png'))
+    restart_level_image = load_image(os.path.join(ICONS_FOLDER, 'restart_level.png'))
+
+    font = pygame.font.Font(None, 150)
+
+    def __init__(self):
+        self.surface = pygame.Surface((WIDTH // 3, HEIGHT))
+        self.rect = self.surface.get_rect(x=WIDTH // 2 - self.surface.get_width() // 2,
+                                          y=HEIGHT // 2 - self.surface.get_height() // 2)
+
+        self.surface.fill(pygame.color.Color('gray'))
+        self.surface.set_alpha(40)
+        self.init_buttons()
+
+    def init_buttons(self):
+        self.menu_btn = pygame.sprite.Sprite(finish_group)
+        self.menu_btn.image = self.menu_image
+        self.menu_btn.rect = self.menu_btn.image.get_rect(
+            x=self.surface.get_width() // 2 - self.menu_btn.image.get_width() // 2 - 80,
+            y=self.surface.get_height() // 2 - self.menu_btn.image.get_height() // 2 + 150
+        )
+
+        self.restart_level_btn = pygame.sprite.Sprite(finish_group)
+        self.restart_level_btn.image = self.restart_level_image
+        self.restart_level_btn.rect = self.restart_level_btn.image.get_rect(
+            x=self.surface.get_width() // 2 - self.restart_level_btn.image.get_width() // 2 + 80,
+            y=self.surface.get_height() // 2 - self.restart_level_btn.image.get_height() // 2 + 150
+        )
+
+    def show(self):
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == pygame.BUTTON_LEFT:
+                        pos = event.pos
+                        pos = (pos[0] - self.rect.x, pos[1] - self.rect.y)
+                        if self.menu_btn.rect.collidepoint(pos):
+                            return MAIN_MENU
+                        elif self.restart_level_btn.rect.collidepoint(pos):
+                            return RESTART_LEVEL
+            finish_group.draw(self.surface)
+            screen.blit(self.surface, self.rect.topleft)
+            pygame.display.flip()
+
+    def set_progress(self, progress):
+        self.surface.fill(pygame.color.Color('gray'))
+        progress_surface = self.font.render(str(progress) + '%', True,
+                                            pygame.color.Color("red"))
+        progress_surface.set_colorkey(progress_surface.get_at((0, 0)))
+        self.surface.blit(
+            progress_surface,
+            (self.surface.get_width() // 2 - progress_surface.get_width() // 2, 80)
+        )
 
 
 def terminate():
@@ -754,15 +825,6 @@ def start_game():
     global MUSIC_ON
     if MUSIC_ON:
         background_chanel.play(background_menu_music, loops=-1)
-    all_sprite.empty()
-    levels_group.empty()
-    menu_group.empty()
-    tiles_group.empty()
-    game_objects.empty()
-    enemy_group.empty()
-    hearts_group.empty()
-    key_group.empty()
-    player_group.empty()
     start_btn = pygame.sprite.Sprite(menu_group)
     start_btn.image = play_icon
     start_btn.rect = start_btn.image.get_rect(x=WIDTH // 2 - start_btn.image.get_width() // 2 + 100,
@@ -782,13 +844,9 @@ def start_game():
                         number_level = select_level()
                         if number_level:
                             player, coins, crystals = generate_level(number_level)
-                            camera.update(player)
-                            for sprite in all_sprite.sprites():
-                                camera.apply(sprite)
-                            camera.set_memory(0, 0)
                             if MUSIC_ON:
                                 background_chanel.play(background_game_play_music, loops=-1)
-                            return player, coins, crystals
+                            return player, coins, crystals, number_level
                     elif music_btn.rect.collidepoint(pos):
                         if MUSIC_ON:
                             MUSIC_ON = False
@@ -856,6 +914,15 @@ def load_level(level_path):
 
 
 def generate_level(number_level):
+    all_sprite.empty()
+    levels_group.empty()
+    menu_group.empty()
+    tiles_group.empty()
+    game_objects.empty()
+    enemy_group.empty()
+    hearts_group.empty()
+    key_group.empty()
+    player_group.empty()
     level_path = os.path.join(LEVELS_FOLDER, str(number_level) + '.lvl')
     level_map = load_level(level_path)
     count_tiles = len(level_map * len(level_map[0]))
@@ -874,9 +941,9 @@ def generate_level(number_level):
                     print('Fatal Error: The player has already been created before')
                     terminate()
             elif level_map[y][x] == '>':
-                Enemy(ememy_sheet, x, y, ROTATION_RIGHT)
+                Enemy(enemy_sheet, x, y, ROTATION_RIGHT)
             elif level_map[y][x] == '<':
-                Enemy(ememy_sheet, x, y, ROTATION_LEFT)
+                Enemy(enemy_sheet, x, y, ROTATION_LEFT)
             elif level_map[y][x] in GAME_OBJECTS_DICT:
                 collided = False
                 collided_do_kill = False
@@ -956,6 +1023,13 @@ def generate_level(number_level):
                 Tile(level_map[y][x], x, y)
             current_tile += 1
             show_loading_level(current_tile // percent_one_tile)
+    if not player_group.sprite:
+        print('На уровне отсутсвует игрок')
+        terminate()
+    camera.update(player)
+    for sprite in all_sprite.sprites():
+        camera.apply(sprite)
+    camera.set_memory(0, 0)
     return player, coins, crystals
 
 
@@ -968,6 +1042,7 @@ enemy_group = pygame.sprite.Group()
 hearts_group = pygame.sprite.Group()
 key_group = pygame.sprite.Group()
 pause_group = pygame.sprite.Group()
+finish_group = pygame.sprite.Group()
 player_group = pygame.sprite.GroupSingle()
 
 background_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'background.png'))
@@ -983,13 +1058,14 @@ background_menu_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'menu
 background_game_play_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'background.wav'))
 
 pause = Pause()
+finish = Finish()
 
 tile_size = (TILE_SIZE, TILE_SIZE)
 
 load_level_font = pygame.font.Font(None, 150)
 
 player_sheet = load_image(PLAYER_TEXTURE_PATH)
-ememy_sheet = load_image(ENEMY_TEXTURE_PATH)
+enemy_sheet = load_image(ENEMY_TEXTURE_PATH)
 
 clock = pygame.time.Clock()
 camera = Camera()
@@ -998,7 +1074,7 @@ left, right, up = False, False, False
 
 frames = 0
 
-player, coins, crystals = start_game()
+player, coins, crystals, number_level = start_game()
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -1011,8 +1087,12 @@ while True:
             elif event.key == pygame.K_SPACE:
                 up = True
             elif event.key == pygame.K_ESCAPE:
-                if pause.show():
-                    player, coins, crystals = start_game()
+                result = pause.show()
+                if result == MAIN_MENU:
+                    player, coins, crystals, number_level = start_game()
+                    break
+                elif result == RESTART_LEVEL:
+                    player, coins, crystals = generate_level(number_level)
                     break
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_d:
@@ -1042,5 +1122,20 @@ while True:
     hearts_group.draw(screen)
     key_group.draw(screen)
     pygame.display.flip()
+    if player.finish:
+        player_crystal_coins = player.crystals + player.coins
+        level_coins_crystals = coins + crystals
+        if not player_crystal_coins:
+            player_crystal_coins = 1
+        if not level_coins_crystals:
+            level_coins_crystals = 1
+        progress = int(player_crystal_coins / level_coins_crystals * 100)
+        finish.set_progress(progress)
+        result = finish.show()
+        if result == MAIN_MENU:
+            player, coins, crystals, number_level = start_game()
+        elif result == RESTART_LEVEL:
+            player, coins, crystals = generate_level(number_level)
+        left, right, up = False, False, False
     clock.tick(FPS)
     frames += 1
