@@ -6,17 +6,24 @@ from random import choice
 # Initialization PyGame
 pygame.init()
 # Screen Size
-WIDTH, HEIGHT = SIZE = 1000, 500
+WIDTH, HEIGHT = SIZE_SCREEN = 1000, 500
 # Main Display
-screen = pygame.display.set_mode(SIZE)
+screen = pygame.display.set_mode(SIZE_SCREEN)
 screen_rect = screen.get_rect()
 
 TILE_SIZE = 48
 
-ROTATION_LEFT = 0
-ROTATION_RIGHT = 1
+ROTATION_LEFT = 1
+ROTATION_RIGHT = 2
+
 MAIN_MENU = 1
 RESTART_LEVEL = 2
+
+COLLIDED = 1
+COLLIDED_DO_KILL = 2
+IGNORE_PLAYER = 3
+IGNORE_ENEMY = 4
+SIZE = 5
 
 MOVE_SPEED = 7
 ENEMY_MOVE_SPEED = 1
@@ -38,74 +45,74 @@ ENEMY_TEXTURE_PATH = 'data/textures/enemy/soldier.png'
 
 GAME_OBJECTS_DICT = {
     '!': ('blade.png',
-          {'collided': True, 'collided_do_kill': True, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 96)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: True, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 96)}),
     '$': ('bush1.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 48)}),
     '%': ('bush2.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 48)}),
     '^': ('button.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 12)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 12)}),
     ':': ('cell.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 48)}),
     '&': ('door.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 48)}),
     '+': ('coin.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (32, 32)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (32, 32)}),
     '|': ('crystal.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (32, 32)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (32, 32)}),
     '1': ('flower1.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 48)}),
     '2': ('flower2.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 48)}),
     '3': ('flower3.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 48)}),
     '4': ('flower4.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 48)}),
     '5': ('flower5.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 48)}),
     '6': ('heart.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (32, 32)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (32, 32)}),
     '7': ('key.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (32, 32)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (32, 32)}),
     '8': ('box1.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': False, 'size': (48, 48)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: False, SIZE: (48, 48)}),
     '9': ('tree1.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 48)}),
     '0': ('tree2.png',
-          {'collided': False, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 48)}),
     '*': ('pointer.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-           'ignore_enemy': True, 'size': (48, 48)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: True, SIZE: (48, 48)}),
     '/': ('zero_enemy.png',
-          {'collided': True, 'collided_do_kill': False, 'ignore_player': True,
-           'ignore_enemy': False, 'size': (48, 48)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: True,
+           IGNORE_ENEMY: False, SIZE: (48, 48)}),
     '\\': ('zero_player.png',
-           {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-            'ignore_enemy': True, 'size': (48, 48)}),
+           {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
+            IGNORE_ENEMY: True, SIZE: (48, 48)}),
     '\'': ('thorns1.png',
-           {'collided': True, 'collided_do_kill': True, 'ignore_player': False,
-            'ignore_enemy': False, 'size': (240, 48)}),
+           {COLLIDED: True, COLLIDED_DO_KILL: True, IGNORE_PLAYER: False,
+            IGNORE_ENEMY: False, SIZE: (240, 48)}),
     '"': ('thorns2.png',
-          {'collided': True, 'collided_do_kill': True, 'ignore_player': False,
-           'ignore_enemy': False, 'size': (240, 48)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: True, IGNORE_PLAYER: False,
+           IGNORE_ENEMY: False, SIZE: (240, 48)}),
 }
 
 
@@ -847,10 +854,8 @@ class Finish(GamePanel):
 class Lose(GamePanel):
     def __init__(self):
         super().__init__()
-        self.surface.blit(
-            self.lose_image,
-            (self.surface.get_width() // 2 - self.lose_image.get_width() // 2, 25)
-        )
+        self.surface.blit(self.lose_image,
+                          (self.surface.get_width() // 2 - self.lose_image.get_width() // 2, 25))
         self.init_buttons()
 
 
@@ -896,19 +901,19 @@ class Level:
                     collided = False
                     collided_do_kill = False
                     ignore_player = False
-                    ignore_enemy = True
+                    ignore_enemy = False
                     file_name, args = GAME_OBJECTS_DICT[self.level_map[y][x]]
                     size = (TILE_SIZE, TILE_SIZE)
-                    if 'collided' in args:
-                        collided = args['collided']
-                    if 'collided_do_kill' in args:
-                        collided_do_kill = args['collided_do_kill']
-                    if 'ignore_player' in args:
-                        ignore_player = args['ignore_player']
-                    if 'ignore_enemy' in args:
-                        ignore_enemy = args['ignore_enemy']
-                    if 'size' in args:
-                        size = args['size']
+                    if COLLIDED in args:
+                        collided = args[COLLIDED]
+                    if COLLIDED_DO_KILL in args:
+                        collided_do_kill = args[COLLIDED_DO_KILL]
+                    if IGNORE_PLAYER in args:
+                        ignore_player = args[IGNORE_PLAYER]
+                    if IGNORE_ENEMY in args:
+                        ignore_enemy = args[IGNORE_ENEMY]
+                    if SIZE in args:
+                        size = args[SIZE]
                     if file_name == 'heart.png':
                         Heart(x, y,
                               file_name=file_name,
@@ -1110,7 +1115,7 @@ pause_group = pygame.sprite.Group()
 player_group = pygame.sprite.GroupSingle()
 
 background_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'background.png'))
-background_image = pygame.transform.scale(background_image, SIZE)
+background_image = pygame.transform.scale(background_image, SIZE_SCREEN)
 
 background_chanel = pygame.mixer.Channel(0)
 background_menu_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'menu_background.wav'))
