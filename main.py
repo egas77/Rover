@@ -26,13 +26,13 @@ FPS = 100
 BACKGROUND_SOUND_VOLUME = 0.5
 MUSIC_ON = False
 
-ELEMENT_TEXTURE_FOLDER = 'data\\textures\\elements'
-TILES_TEXTURE_FOLDER = 'data\\textures\\tiles'
-ICONS_FOLDER = 'data\\textures\\icons'
-MUSIC_FOLDER = 'data\\music'
-LEVELS_FOLDER = 'data\\levels'
-PLAYER_TEXTURE_PATH = 'data\\textures\\player\\textures_48.png'
-ENEMY_TEXTURE_PATH = 'data\\textures\\enemy\\textures_48.png'
+ELEMENT_TEXTURE_FOLDER = 'data/textures/elements'
+TILES_TEXTURE_FOLDER = 'data/textures/tiles'
+ICONS_FOLDER = 'data/textures/icons'
+MUSIC_FOLDER = 'data/music'
+LEVELS_FOLDER = 'data/levels'
+PLAYER_TEXTURE_PATH = 'data/textures/player/textures_48.png'
+ENEMY_TEXTURE_PATH = 'data/textures/enemy/textures_48.png'
 
 GAME_OBJECTS_DICT = {
     '!': ('blade.png',
@@ -675,6 +675,75 @@ class SelectLevelSprite(pygame.sprite.Sprite):
                          self.image.get_height() // 2 - self.number_level_sprite.get_height() // 2))
 
 
+class Pause:
+    play_image = load_image(os.path.join(ICONS_FOLDER, 'pause_play.png'))
+    menu_image = load_image(os.path.join(ICONS_FOLDER, 'menu_pause.png'))
+    music_on_image = load_image(os.path.join(ICONS_FOLDER, 'pause_music_on.png'))
+    music_off_image = load_image(os.path.join(ICONS_FOLDER, 'pause_music_off.png'))
+
+    def __init__(self):
+        self.surface = pygame.Surface((WIDTH // 3, HEIGHT))
+        self.rect = self.surface.get_rect(x=WIDTH // 2 - self.surface.get_width() // 2,
+                                          y=HEIGHT // 2 - self.surface.get_height() // 2)
+
+        self.surface.fill(pygame.color.Color('gray'))
+        self.surface.set_alpha(40)
+        self.init_button()
+
+    def init_button(self):
+        self.play_btn = pygame.sprite.Sprite(pause_group)
+        self.play_btn.image = self.play_image
+        self.play_btn.rect = self.play_btn.image.get_rect(
+            x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2,
+            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 30
+        )
+
+        self.menu_btn = pygame.sprite.Sprite(pause_group)
+        self.menu_btn.image = self.menu_image
+        self.menu_btn.rect = self.menu_btn.image.get_rect(
+            x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2 - 80,
+            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 150
+        )
+
+        self.music_btn = pygame.sprite.Sprite(pause_group)
+        self.music_btn.image = self.music_on_image if MUSIC_ON else self.music_off_image
+        self.music_btn.rect = self.music_btn.image.get_rect(
+            x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2 + 80,
+            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 150
+        )
+
+    def show(self):
+        global MUSIC_ON
+        self.music_btn.image = self.music_on_image if MUSIC_ON else self.music_off_image
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        return None
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == pygame.BUTTON_LEFT:
+                        pos = event.pos
+                        pos = (pos[0] - self.rect.x, pos[1] - self.rect.y)
+                        if self.play_btn.rect.collidepoint(pos):
+                            return None
+                        elif self.menu_btn.rect.collidepoint(pos):
+                            return 1
+                        elif self.music_btn.rect.collidepoint(pos):
+                            if MUSIC_ON:
+                                self.music_btn.image = self.music_off_image
+                                MUSIC_ON = False
+                                background_chanel.stop()
+                            else:
+                                self.music_btn.image = self.music_on_image
+                                MUSIC_ON = True
+                                background_chanel.play(background_game_play_music, loops=-1)
+            pause_group.draw(self.surface)
+            screen.blit(self.surface, self.rect.topleft)
+            pygame.display.flip()
+
+
 def terminate():
     """Function terminate this game"""
     pygame.quit()
@@ -683,7 +752,17 @@ def terminate():
 
 def start_game():
     global MUSIC_ON
+    if MUSIC_ON:
+        background_chanel.play(background_menu_music, loops=-1)
+    all_sprite.empty()
+    levels_group.empty()
     menu_group.empty()
+    tiles_group.empty()
+    game_objects.empty()
+    enemy_group.empty()
+    hearts_group.empty()
+    key_group.empty()
+    player_group.empty()
     start_btn = pygame.sprite.Sprite(menu_group)
     start_btn.image = play_icon
     start_btn.rect = start_btn.image.get_rect(x=WIDTH // 2 - start_btn.image.get_width() // 2 + 100,
@@ -888,6 +967,7 @@ game_objects = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
 hearts_group = pygame.sprite.Group()
 key_group = pygame.sprite.Group()
+pause_group = pygame.sprite.Group()
 player_group = pygame.sprite.GroupSingle()
 
 background_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'background.png'))
@@ -902,8 +982,7 @@ background_chanel = pygame.mixer.Channel(0)
 background_menu_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'menu_background.wav'))
 background_game_play_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'background.wav'))
 
-if MUSIC_ON:
-    background_chanel.play(background_menu_music, loops=-1)
+pause = Pause()
 
 tile_size = (TILE_SIZE, TILE_SIZE)
 
@@ -920,7 +999,6 @@ left, right, up = False, False, False
 frames = 0
 
 player, coins, crystals = start_game()
-
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -932,6 +1010,10 @@ while True:
                 left = True
             elif event.key == pygame.K_SPACE:
                 up = True
+            elif event.key == pygame.K_ESCAPE:
+                if pause.show():
+                    player, coins, crystals = start_game()
+                    break
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_d:
                 right = False
