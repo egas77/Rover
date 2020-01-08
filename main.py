@@ -100,7 +100,13 @@ GAME_OBJECTS_DICT = {
            'ignore_enemy': False, 'size': (48, 48)}),
     '\\': ('zero_player.png',
            {'collided': True, 'collided_do_kill': False, 'ignore_player': False,
-            'ignore_enemy': True, 'size': (48, 48)})
+            'ignore_enemy': True, 'size': (48, 48)}),
+    '\'': ('thorns1.png',
+           {'collided': True, 'collided_do_kill': True, 'ignore_player': False,
+            'ignore_enemy': False, 'size': (240, 48)}),
+    '"': ('thorns2.png',
+          {'collided': True, 'collided_do_kill': True, 'ignore_player': False,
+           'ignore_enemy': False, 'size': (240, 48)}),
 }
 
 
