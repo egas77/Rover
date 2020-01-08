@@ -860,15 +860,11 @@ class Level:
     load_level_font = pygame.font.Font(None, 150)
 
     def __init__(self, number_level):
-        self.level_map = self.load(number_level)
-
-    def load(self, number_level):
         level_path = os.path.join(LEVELS_FOLDER, str(number_level) + '.lvl')
         with open(level_path, mode='r', encoding='utf8') as mapFile:
-            level_map = [line.rstrip() for line in mapFile]
-            max_width = max(map(len, level_map))
-            level_map = list(map(lambda row: row.ljust(max_width, '#'), level_map))
-            return level_map
+            self.level_map = [line.rstrip() for line in mapFile]
+            max_width = max(map(len, self.level_map))
+            self.level_map = list(map(lambda row: row.ljust(max_width, '#'), self.level_map))
 
     def generate(self):
         self.coins = 0
@@ -1141,10 +1137,8 @@ while True:
                 result = pause.show()
                 if result == MAIN_MENU:
                     player, level = start_game()
-                    break
                 elif result == RESTART_LEVEL:
                     player = level.generate()
-                    break
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 player.attack()
