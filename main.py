@@ -34,8 +34,8 @@ ICONS_FOLDER = 'data/textures/icons'
 TEXT_FOLDER = 'data/textures/text'
 MUSIC_FOLDER = 'data/music'
 LEVELS_FOLDER = 'data/levels'
-PLAYER_TEXTURE_PATH = 'data/textures/player/textures_48.png'
-ENEMY_TEXTURE_PATH = 'data/textures/enemy/textures_48.png'
+PLAYER_TEXTURE_PATH = 'data/textures/player/player.png'
+ENEMY_TEXTURE_PATH = 'data/textures/enemy/soldier.png'
 
 GAME_OBJECTS_DICT = {
     '!': ('blade.png',
@@ -122,6 +122,17 @@ def load_image(path, color_key=None):
     return image
 
 
+def cut_sheet(sheet, columns, row, width_image, height_image):
+    frames = []
+    for col in range(columns):
+        frame_location = (height_image * col, width_image * (row - 1))
+        cur_frame = sheet.subsurface(pygame.Rect(
+            frame_location, (height_image, width_image)))
+        cur_frame = cur_frame.convert_alpha()
+        frames.append(cur_frame)
+    return frames
+
+
 class Camera:
     # зададим начальный сдвиг камеры
     def __init__(self):
@@ -156,32 +167,42 @@ class Camera:
         return self.memory_dy
 
 
-class GameObject(pygame.sprite.Sprite):
-    images = dict()
+class SelectLevelSprite(pygame.sprite.Sprite):
+    font = pygame.font.Font(None, 100)
+    size_sprite_level = (100, 100)
+    background_image_level = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'box1.png'))
+    background_image_level = pygame.transform.scale(background_image_level, size_sprite_level)
 
-    def __init__(self, x, y, file_name=None, collision=False, collision_do_kill=False,
-                 ignore_player=False, ignore_enemy=True, is_tile=False, size=(48, 48)):
-        super().__init__(game_objects, all_sprite)
-        self.collision = collision
-        self.collision_do_kill = False
-        self.ignore_player = ignore_player
-        self.ignore_enemy = ignore_enemy
-        self.is_tile = is_tile
-        if not is_tile:
-            if file_name not in self.images:
-                image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, file_name))
-                if file_name == 'blade.png':
-                    image = pygame.transform.scale(image, size)
-                else:
-                    image = pygame.transform.scale(image, size)
-                self.images[file_name] = image
-            self.image = self.images[file_name].copy()
-            self.rect = self.image.get_rect(x=tile_size[0] * x, y=tile_size[1] * y)
-            if collision:
-                self.mask = pygame.mask.Mask(self.rect.size, 1)
-                self.collision_do_kill = collision_do_kill
-            else:
-                self.mask = pygame.mask.Mask(self.rect.size, 0)
+    def __init__(self, center_x, center_y, number_level):
+        super().__init__(levels_group)
+        self.image = self.background_image_level.copy()
+        self.rect = self.image.get_rect(centerx=center_x, centery=center_y,
+                                        size=self.size_sprite_level)
+        self.number_level = number_level
+        self.number_level_sprite = self.font.render(str(number_level), 1,
+                                                    pygame.color.Color(206, 225, 66))
+        self.image.blit(self.number_level_sprite,
+                        (self.image.get_width() // 2 - self.number_level_sprite.get_width() // 2,
+                         self.image.get_height() // 2 - self.number_level_sprite.get_height() // 2))
+
+
+class HeartIcon(pygame.sprite.Sprite):
+    image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'heart.png'))
+    width_heart = image.get_width()
+    space_x = 5
+
+    def __init__(self, x):
+        super().__init__(hearts_group)
+        self.rect = self.image.get_rect(x=x * self.width_heart + self.space_x * (x + 1), y=10)
+
+
+class KeyIcon(pygame.sprite.Sprite):
+    image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'key.png'))
+    image = pygame.transform.scale(image, (48, 48))
+
+    def __init__(self):
+        super().__init__(key_group)
+        self.rect = self.image.get_rect(x=WIDTH - 70, y=20)
 
 
 class GamePerson(pygame.sprite.Sprite):
@@ -272,16 +293,6 @@ class GamePerson(pygame.sprite.Sprite):
             if yvel < 0:  # если движется вверх
                 self.rect.top = game_object.rect.bottom - space_mask_up + 1  # то не движется вверх
                 self.yvel = 0  # и энергия прыжка пропадает
-
-    def cut_sheet(self, sheet, columns, row, width_image, height_image):
-        frames = []
-        for col in range(columns):
-            frame_location = (height_image * col, width_image * (row - 1))
-            cur_frame = sheet.subsurface(pygame.Rect(
-                frame_location, (height_image, width_image)))
-            cur_frame = cur_frame.convert_alpha()
-            frames.append(cur_frame)
-        return frames
 
     def attack(self):
         if not self.attack_group and not self.damage_mode and not self.death_mode:
@@ -390,42 +401,45 @@ class GamePerson(pygame.sprite.Sprite):
 
 
 class Player(GamePerson):
-    def __init__(self, sheet, x, y):
+    sheet = load_image(PLAYER_TEXTURE_PATH)
+
+    frames = {
+        'idle_right': cut_sheet(sheet, 13, 1, 48, 48),
+        'run_right': cut_sheet(sheet, 8, 2, 48, 48),
+        'attack_right_1': cut_sheet(sheet, 10, 3, 48, 48),
+        'attack_right_2': cut_sheet(sheet, 10, 4, 48, 48),
+        'attack_right_3': cut_sheet(sheet, 10, 5, 48, 48),
+        'jump_right': cut_sheet(sheet, 6, 6, 48, 48),
+        'damage_right': cut_sheet(sheet, 4, 7, 48, 48),
+        'death_right': cut_sheet(sheet, 7, 8, 48, 48),
+
+        'idle_left': cut_sheet(sheet, 13, 9, 48, 48),
+        'run_left': cut_sheet(sheet, 8, 10, 48, 48),
+        'attack_left_1': cut_sheet(sheet, 10, 11, 48, 48),
+        'attack_left_2': cut_sheet(sheet, 10, 12, 48, 48),
+        'attack_left_3': cut_sheet(sheet, 10, 13, 48, 48),
+        'jump_left': cut_sheet(sheet, 6, 14, 48, 48),
+        'damage_left': cut_sheet(sheet, 4, 15, 48, 48),
+        'death_left': cut_sheet(sheet, 7, 16, 48, 48)
+    }
+    attack_groups = (
+        {
+            ROTATION_RIGHT: 'attack_right_1',
+            ROTATION_LEFT: 'attack_left_1'
+        },
+        {
+            ROTATION_RIGHT: 'attack_right_2',
+            ROTATION_LEFT: 'attack_left_2'
+        },
+        {
+            ROTATION_RIGHT: 'attack_right_3',
+            ROTATION_LEFT: 'attack_left_3'
+        }
+    )
+
+    def __init__(self, x, y):
         super().__init__(x, y, all_sprite, player_group)
         self.check_point = (self.rect.x, self.rect.y)
-        self.frames = {
-            'idle_right': self.cut_sheet(sheet, 13, 1, 48, 48),
-            'run_right': self.cut_sheet(sheet, 8, 2, 48, 48),
-            'attack_right_1': self.cut_sheet(sheet, 10, 3, 48, 48),
-            'attack_right_2': self.cut_sheet(sheet, 10, 4, 48, 48),
-            'attack_right_3': self.cut_sheet(sheet, 10, 5, 48, 48),
-            'jump_right': self.cut_sheet(sheet, 6, 6, 48, 48),
-            'damage_right': self.cut_sheet(sheet, 4, 7, 48, 48),
-            'death_right': self.cut_sheet(sheet, 7, 8, 48, 48),
-
-            'idle_left': self.cut_sheet(sheet, 13, 9, 48, 48),
-            'run_left': self.cut_sheet(sheet, 8, 10, 48, 48),
-            'attack_left_1': self.cut_sheet(sheet, 10, 11, 48, 48),
-            'attack_left_2': self.cut_sheet(sheet, 10, 12, 48, 48),
-            'attack_left_3': self.cut_sheet(sheet, 10, 13, 48, 48),
-            'jump_left': self.cut_sheet(sheet, 6, 14, 48, 48),
-            'damage_left': self.cut_sheet(sheet, 4, 15, 48, 48),
-            'death_left': self.cut_sheet(sheet, 7, 16, 48, 48)
-        }
-        self.attack_groups = (
-            {
-                ROTATION_RIGHT: 'attack_right_1',
-                ROTATION_LEFT: 'attack_left_1'
-            },
-            {
-                ROTATION_RIGHT: 'attack_right_2',
-                ROTATION_LEFT: 'attack_left_2'
-            },
-            {
-                ROTATION_RIGHT: 'attack_right_3',
-                ROTATION_LEFT: 'attack_left_3'
-            }
-        )
         self.image = self.frames['idle_right'][0]
         self.mask = pygame.mask.Mask(self.rect.size, False)
         self.space_mask_right = 19
@@ -506,43 +520,45 @@ class Player(GamePerson):
 
 
 class Enemy(GamePerson):
-    def __init__(self, sheet, x, y, rotation):
-        super().__init__(x, y, all_sprite, enemy_group)
-        self.frames = {
-            'idle_right': self.cut_sheet(sheet, 5, 1, 48, 57),
-            'run_right': self.cut_sheet(sheet, 8, 2, 48, 57),
-            'attack_right_1': self.cut_sheet(sheet, 7, 3, 48, 57),
-            'attack_right_2': self.cut_sheet(sheet, 6, 4, 48, 57),
-            'attack_right_3': self.cut_sheet(sheet, 2, 5, 48, 57),
-            'jump_right': self.cut_sheet(sheet, 5, 6, 48, 57),
-            'damage_right': self.cut_sheet(sheet, 4, 7, 48, 57),
-            'death_right': self.cut_sheet(sheet, 7, 8, 48, 57),
+    sheet = load_image(ENEMY_TEXTURE_PATH)
 
-            'idle_left': self.cut_sheet(sheet, 5, 9, 48, 57),
-            'run_left': self.cut_sheet(sheet, 8, 10, 48, 57),
-            'attack_left_1': self.cut_sheet(sheet, 7, 11, 48, 57),
-            'attack_left_2': self.cut_sheet(sheet, 6, 12, 48, 57),
-            'attack_left_3': self.cut_sheet(sheet, 2, 13, 48, 57),
-            'jump_left': self.cut_sheet(sheet, 5, 14, 48, 57),
-            'damage_left': self.cut_sheet(sheet, 4, 15, 48, 57),
-            'death_left': self.cut_sheet(sheet, 7, 16, 48, 57)
+    frames = {
+        'idle_right': cut_sheet(sheet, 5, 1, 48, 57),
+        'run_right': cut_sheet(sheet, 8, 2, 48, 57),
+        'attack_right_1': cut_sheet(sheet, 7, 3, 48, 57),
+        'attack_right_2': cut_sheet(sheet, 6, 4, 48, 57),
+        'attack_right_3': cut_sheet(sheet, 2, 5, 48, 57),
+        'jump_right': cut_sheet(sheet, 5, 6, 48, 57),
+        'damage_right': cut_sheet(sheet, 4, 7, 48, 57),
+        'death_right': cut_sheet(sheet, 7, 8, 48, 57),
+
+        'idle_left': cut_sheet(sheet, 5, 9, 48, 57),
+        'run_left': cut_sheet(sheet, 8, 10, 48, 57),
+        'attack_left_1': cut_sheet(sheet, 7, 11, 48, 57),
+        'attack_left_2': cut_sheet(sheet, 6, 12, 48, 57),
+        'attack_left_3': cut_sheet(sheet, 2, 13, 48, 57),
+        'jump_left': cut_sheet(sheet, 5, 14, 48, 57),
+        'damage_left': cut_sheet(sheet, 4, 15, 48, 57),
+        'death_left': cut_sheet(sheet, 7, 16, 48, 57)
+    }
+
+    attack_groups = (
+        {
+            ROTATION_RIGHT: 'attack_right_1',
+            ROTATION_LEFT: 'attack_left_1'
+        },
+        {
+            ROTATION_RIGHT: 'attack_right_2',
+            ROTATION_LEFT: 'attack_left_2'
+        },
+        {
+            ROTATION_RIGHT: 'attack_right_3',
+            ROTATION_LEFT: 'attack_left_3'
         }
+    )
 
-        self.attack_groups = (
-            {
-                ROTATION_RIGHT: 'attack_right_1',
-                ROTATION_LEFT: 'attack_left_1'
-            },
-            {
-                ROTATION_RIGHT: 'attack_right_2',
-                ROTATION_LEFT: 'attack_left_2'
-            },
-            {
-                ROTATION_RIGHT: 'attack_right_3',
-                ROTATION_LEFT: 'attack_left_3'
-            }
-        )
-
+    def __init__(self, x, y, rotation):
+        super().__init__(x, y, all_sprite, enemy_group)
         self.image = self.frames['idle_right'][0]
         self.mask = pygame.mask.Mask(self.rect.size, False)
         self.space_mask_right = 5
@@ -575,23 +591,32 @@ class Enemy(GamePerson):
                          self.space_mask_up, self.space_mask_bottom, reverse_x=True)
 
 
-class HeartIcon(pygame.sprite.Sprite):
-    image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'heart.png'))
-    width_heart = image.get_width()
-    space_x = 5
+class GameObject(pygame.sprite.Sprite):
+    images = dict()
 
-    def __init__(self, x):
-        super().__init__(hearts_group)
-        self.rect = self.image.get_rect(x=x * self.width_heart + self.space_x * (x + 1), y=10)
-
-
-class KeyIcon(pygame.sprite.Sprite):
-    image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'key.png'))
-    image = pygame.transform.scale(image, (48, 48))
-
-    def __init__(self):
-        super().__init__(key_group)
-        self.rect = self.image.get_rect(x=WIDTH - 70, y=20)
+    def __init__(self, x, y, file_name=None, collision=False, collision_do_kill=False,
+                 ignore_player=False, ignore_enemy=True, is_tile=False, size=(48, 48)):
+        super().__init__(game_objects, all_sprite)
+        self.collision = collision
+        self.collision_do_kill = False
+        self.ignore_player = ignore_player
+        self.ignore_enemy = ignore_enemy
+        self.is_tile = is_tile
+        if not is_tile:
+            if file_name not in self.images:
+                image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, file_name))
+                if file_name == 'blade.png':
+                    image = pygame.transform.scale(image, size)
+                else:
+                    image = pygame.transform.scale(image, size)
+                self.images[file_name] = image
+            self.image = self.images[file_name].copy()
+            self.rect = self.image.get_rect(x=tile_size[0] * x, y=tile_size[1] * y)
+            if collision:
+                self.mask = pygame.mask.Mask(self.rect.size, 1)
+                self.collision_do_kill = collision_do_kill
+            else:
+                self.mask = pygame.mask.Mask(self.rect.size, 0)
 
 
 class Tile(GameObject):
@@ -668,25 +693,6 @@ class ButtonJump(GameObject):
                          collision_do_kill=collision_do_kill, ignore_player=ignore_player,
                          ignore_enemy=ignore_enemy, size=size)
         self.rect.y += (TILE_SIZE - size[1])
-
-
-class SelectLevelSprite(pygame.sprite.Sprite):
-    font = pygame.font.Font(None, 100)
-    size_sprite_level = (100, 100)
-    background_image_level = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'box1.png'))
-    background_image_level = pygame.transform.scale(background_image_level, size_sprite_level)
-
-    def __init__(self, center_x, center_y, number_level):
-        super().__init__(levels_group)
-        self.image = self.background_image_level.copy()
-        self.rect = self.image.get_rect(centerx=center_x, centery=center_y,
-                                        size=self.size_sprite_level)
-        self.number_level = number_level
-        self.number_level_sprite = self.font.render(str(number_level), 1,
-                                                    pygame.color.Color(206, 225, 66))
-        self.image.blit(self.number_level_sprite,
-                        (self.image.get_width() // 2 - self.number_level_sprite.get_width() // 2,
-                         self.image.get_height() // 2 - self.number_level_sprite.get_height() // 2))
 
 
 class GamePanel:
@@ -954,14 +960,14 @@ def generate_level(number_level):
         for x in range(len(level_map[0])):
             if level_map[y][x] == '@':
                 if not player_group.sprite:
-                    player = Player(player_sheet, x, y)
+                    player = Player(x, y)
                 else:
                     print('Fatal Error: The player has already been created before')
                     terminate()
             elif level_map[y][x] == '>':
-                Enemy(enemy_sheet, x, y, ROTATION_RIGHT)
+                Enemy(x, y, ROTATION_RIGHT)
             elif level_map[y][x] == '<':
-                Enemy(enemy_sheet, x, y, ROTATION_LEFT)
+                Enemy(x, y, ROTATION_LEFT)
             elif level_map[y][x] in GAME_OBJECTS_DICT:
                 collided = False
                 collided_do_kill = False
@@ -1083,15 +1089,13 @@ tile_size = (TILE_SIZE, TILE_SIZE)
 
 load_level_font = pygame.font.Font(None, 150)
 
-player_sheet = load_image(PLAYER_TEXTURE_PATH)
-enemy_sheet = load_image(ENEMY_TEXTURE_PATH)
-
 clock = pygame.time.Clock()
 camera = Camera()
 
 frames = 0
 
 player, coins, crystals, number_level = start_game()
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
