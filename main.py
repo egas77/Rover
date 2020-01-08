@@ -190,6 +190,9 @@ class SelectLevelSprite(pygame.sprite.Sprite):
                         (self.image.get_width() // 2 - self.number_level_sprite.get_width() // 2,
                          self.image.get_height() // 2 - self.number_level_sprite.get_height() // 2))
 
+    def get_number_level(self):
+        return self.number_level
+
 
 class HeartIcon(pygame.sprite.Sprite):
     image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'heart.png'))
@@ -636,7 +639,7 @@ class GameObject(pygame.sprite.Sprite):
                     image = pygame.transform.scale(image, size)
                 self.images[file_name] = image
             self.image = self.images[file_name].copy()
-            self.rect = self.image.get_rect(x=tile_size[0] * x, y=tile_size[1] * y)
+            self.rect = self.image.get_rect(x=TILE_SIZE * x, y=TILE_SIZE * y)
             if collision:
                 self.mask = pygame.mask.Mask(self.rect.size, 1)
                 self.collision_do_kill = collision_do_kill
@@ -652,7 +655,7 @@ class GameObject(pygame.sprite.Sprite):
                     image = pygame.transform.scale(image, (TILE_SIZE, TILE_SIZE))
                 self.images[file_name] = image
             self.image = self.images[file_name]
-            self.rect = self.image.get_rect(x=tile_size[0] * x, y=tile_size[1] * y)
+            self.rect = self.image.get_rect(x=TILE_SIZE * x, y=TILE_SIZE * y)
             self.mask = pygame.mask.from_surface(self.image)
             self.add(tiles_group)
         self.start_pos = self.rect.topleft
@@ -910,7 +913,7 @@ class Level:
                     ignore_player = False
                     ignore_enemy = True
                     file_name, args = GAME_OBJECTS_DICT[self.level_map[y][x]]
-                    size = tile_size
+                    size = (TILE_SIZE, TILE_SIZE)
                     if 'collided' in args:
                         collided = args['collided']
                     if 'collided_do_kill' in args:
@@ -1018,6 +1021,9 @@ class Level:
             return self.coins + self.crystals
         return 1
 
+    def get_progress(self):
+        return player.get_bonus() / level.get_bonus() * 100 // 1
+
 
 class Menu:
     play_icon = load_image(os.path.join(ICONS_FOLDER, 'play.png'))
@@ -1103,7 +1109,7 @@ class Menu:
                         if level_sprite.rect.collidepoint(pos):
                             if level_sprite.image == self.back_icon:
                                 return None
-                            return level_sprite.number_level
+                            return level_sprite.get_number_level()
 
 
 all_sprite = pygame.sprite.Group()
@@ -1125,17 +1131,15 @@ background_chanel = pygame.mixer.Channel(0)
 background_menu_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'menu_background.wav'))
 background_game_play_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'background.wav'))
 
-tile_size = (TILE_SIZE, TILE_SIZE)
-
 music_on = False
+
+clock = pygame.time.Clock()
+camera = Camera()
 
 menu = Menu()
 pause = Pause()
 finish = Finish()
 lose = Lose()
-
-clock = pygame.time.Clock()
-camera = Camera()
 
 frames = 0
 
@@ -1169,8 +1173,7 @@ while True:
     key_group.draw(screen)
     pygame.display.flip()
     if player.finish:
-        progress = int(player.get_bonus() / level.get_bonus() * 100)
-        finish.set_progress(progress)
+        finish.set_progress(level.get_progress())
         result = finish.show()
         if result == MAIN_MENU:
             player, level = menu.show()
