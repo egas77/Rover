@@ -458,16 +458,18 @@ class Player(GamePerson):
                     self.mask.set_at((x, y), 1)
         self.visible_hearts()
 
-    def update(self, left, right, up, boost):
-        if left:
+    def update(self):
+        keys_status = pygame.key.get_pressed()
+        if keys_status[pygame.K_a]:
             self.xvel = -MOVE_SPEED
-        if right:
+        if keys_status[pygame.K_d]:
             self.xvel = MOVE_SPEED
-        if not (left or right) or self.damage_mode or self.death_mode:
+        if (not (keys_status[pygame.K_a] or keys_status[pygame.K_d]) or
+                self.damage_mode or self.death_mode):
             self.xvel = 0
-        if boost:
+        if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
             self.xvel *= 1.75
-        if up:
+        if keys_status[pygame.K_SPACE]:
             if self.on_ground:
                 self.yvel = -JUMP_POWER
         if not self.on_ground:
@@ -594,6 +596,8 @@ class Enemy(GamePerson):
         if not self.moving:
             self.moving = self.check_in_screen()
         if self.moving:
+            if self.damage_mode or self.death_mode:
+                self.xvel = 0
             self.update_sprite_image()
             if not self.on_ground:
                 self.yvel += GRAVITY
@@ -1144,19 +1148,7 @@ while True:
                 player.attack()
     screen.blit(background_image, (0, 0))
     if frames % 2 == 0:
-        left, right, up, boost = False, False, False, False
-        keys_status = pygame.key.get_pressed()
-        if keys_status[pygame.K_d]:
-            right = True
-        if keys_status[pygame.K_a]:
-            left = True
-        if keys_status[pygame.K_SPACE]:
-            up = True
-        if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
-            boost = True
-        player.update(left, right, up, boost)
-        for enemy in enemy_group.sprites():
-            enemy.update()
+        all_sprite.update()
         camera.update(player)
         for sprite in all_sprite.sprites():
             camera.apply(sprite)
