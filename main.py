@@ -181,7 +181,7 @@ class GamePerson(pygame.sprite.Sprite):
         self.rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
         self.xvel = 0
         self.yvel = 0
-        self.onGround = False
+        self.on_ground = False
         self.death_mode = False
         self.damage_mode = False
         self.attack_group = None
@@ -255,7 +255,7 @@ class GamePerson(pygame.sprite.Sprite):
                 self.rect.left = game_object.rect.right - space_mask_left + 1  # то не движется влево
             if yvel > 0:  # если падает вниз
                 self.rect.bottom = game_object.rect.top + space_mask_bottom - 1  # то не падает вниз
-                self.onGround = True  # и становится на что-то твердое
+                self.on_ground = True  # и становится на что-то твердое
                 self.yvel = 0
             if yvel < 0:  # если движется вверх
                 self.rect.top = game_object.rect.bottom - space_mask_up + 1  # то не движется вверх
@@ -320,8 +320,8 @@ class GamePerson(pygame.sprite.Sprite):
                     self.image = self.frames['idle_right'][
                         self.cut_frame_update % len(self.frames['idle_right'])]
 
-                elif self.yvel != 0 and not self.onGround:
-                    if self.onGround and self.yvel < 0:
+                elif self.yvel != 0 and not self.on_ground:
+                    if self.on_ground and self.yvel < 0:
                         self.cut_frame_update = 0
                     self.image = self.frames['jump_right'][
                         self.cut_frame_update % len(self.frames['jump_right'])]
@@ -354,12 +354,12 @@ class GamePerson(pygame.sprite.Sprite):
                         self.attack_group = None
                         self.cut_frame_update = 0
 
-                elif self.xvel == 0 and self.yvel == 0 and self.onGround:
+                elif self.xvel == 0 and self.yvel == 0 and self.on_ground:
                     self.image = self.frames['idle_left'][
                         self.cut_frame_update % len(self.frames['idle_left'])]
 
-                elif self.yvel != 0 and not self.onGround:
-                    if self.onGround and self.yvel > 0:
+                elif self.yvel != 0 and not self.on_ground:
+                    if self.on_ground and self.yvel > 0:
                         self.cut_frame_update = 0
                     self.image = self.frames['jump_left'][
                         self.cut_frame_update % len(self.frames['jump_left'])]
@@ -369,6 +369,11 @@ class GamePerson(pygame.sprite.Sprite):
                         self.cut_frame_update % len(self.frames['run_left'])]
             self.cut_frame_update += 1
         self.cut_frame += 1
+
+    def check_in_screen(self):
+        if self.rect.colliderect(screen_rect) and not self.moving:
+            return True
+        return False
 
 
 class Player(GamePerson):
@@ -436,11 +441,11 @@ class Player(GamePerson):
         if speed_up:
             self.xvel *= 1.75
         if up:
-            if self.onGround:
+            if self.on_ground:
                 self.yvel = -JUMP_POWER
-        if not self.onGround:
+        if not self.on_ground:
             self.yvel += GRAVITY
-        self.onGround = False
+        self.on_ground = False
         self.rect.y += self.yvel
         self.collide(0, self.yvel, self.space_mask_right, self.space_mask_left,
                      self.space_mask_up, self.space_mask_bottom)
@@ -484,27 +489,6 @@ class Player(GamePerson):
 
     def visible_key(self):
         KeyIcon()
-
-
-class HeartIcon(pygame.sprite.Sprite):
-    image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'heart.png'))
-    width_heart = image.get_width()
-    space_x = 5
-
-    def __init__(self, x):
-        super().__init__(hearts_group)
-        self.image = self.image
-        self.rect = self.image.get_rect(x=x * self.width_heart + self.space_x * (x + 1), y=10)
-
-
-class KeyIcon(pygame.sprite.Sprite):
-    image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'key.png'))
-    image = pygame.transform.scale(image, (48, 48))
-
-    def __init__(self):
-        super().__init__(key_group)
-        self.image = self.image
-        self.rect = self.image.get_rect(x=WIDTH - 70, y=20)
 
 
 class Enemy(GamePerson):
@@ -566,9 +550,9 @@ class Enemy(GamePerson):
             self.moving = self.check_in_screen()
         if self.moving:
             self.update_sprite_image()
-            if not self.onGround:
+            if not self.on_ground:
                 self.yvel += GRAVITY
-            self.onGround = False
+            self.on_ground = False
             self.rect.y += self.yvel
             self.collide(0, self.yvel, self.space_mask_right, self.space_mask_left,
                          self.space_mask_up, self.space_mask_bottom, reverse_x=True)
@@ -576,10 +560,24 @@ class Enemy(GamePerson):
             self.collide(self.xvel, 0, self.space_mask_right, self.space_mask_left,
                          self.space_mask_up, self.space_mask_bottom, reverse_x=True)
 
-    def check_in_screen(self):
-        if self.rect.colliderect(screen_rect) and not self.moving:
-            return True
-        return False
+
+class HeartIcon(pygame.sprite.Sprite):
+    image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'heart.png'))
+    width_heart = image.get_width()
+    space_x = 5
+
+    def __init__(self, x):
+        super().__init__(hearts_group)
+        self.rect = self.image.get_rect(x=x * self.width_heart + self.space_x * (x + 1), y=10)
+
+
+class KeyIcon(pygame.sprite.Sprite):
+    image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'key.png'))
+    image = pygame.transform.scale(image, (48, 48))
+
+    def __init__(self):
+        super().__init__(key_group)
+        self.rect = self.image.get_rect(x=WIDTH - 70, y=20)
 
 
 class Tile(GameObject):
@@ -685,20 +683,15 @@ def terminate():
 
 def start_game():
     global MUSIC_ON
+    menu_group.empty()
     start_btn = pygame.sprite.Sprite(menu_group)
-    start_btn.image = play_image
+    start_btn.image = play_icon
     start_btn.rect = start_btn.image.get_rect(x=WIDTH // 2 - start_btn.image.get_width() // 2 + 100,
                                               y=HEIGHT // 2 + 30)
     music_btn = pygame.sprite.Sprite(menu_group)
-    if MUSIC_ON:
-        music_btn.image = music_on_image
-        background_chanel.play(background_menu_music, loops=-1)
-    else:
-        music_btn.image = music_off_image
+    music_btn.image = music_on_icon if MUSIC_ON else music_off_icon
     music_btn.rect = music_btn.image.get_rect(x=WIDTH // 2 - start_btn.image.get_width() // 2 - 100,
                                               y=HEIGHT // 2 + 30)
-    screen.blit(background_image, (0, 0))
-    screen.blit(name_game_image, (0, 0))
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -708,24 +701,32 @@ def start_game():
                 if event.button == pygame.BUTTON_LEFT:
                     if start_btn.rect.collidepoint(pos):
                         number_level = select_level()
-                        coins, crystals = generate_level(number_level)
-                        if MUSIC_ON:
-                            background_chanel.play(background_game_play_music, loops=-1)
-                        return coins, crystals
+                        if number_level:
+                            player, coins, crystals = generate_level(number_level)
+                            camera.update(player)
+                            for sprite in all_sprite.sprites():
+                                camera.apply(sprite)
+                            camera.set_memory(0, 0)
+                            if MUSIC_ON:
+                                background_chanel.play(background_game_play_music, loops=-1)
+                            return player, coins, crystals
                     elif music_btn.rect.collidepoint(pos):
                         if MUSIC_ON:
                             MUSIC_ON = False
-                            music_btn.image = music_off_image
+                            music_btn.image = music_off_icon
                             background_chanel.stop()
                         else:
                             MUSIC_ON = True
-                            music_btn.image = music_on_image
+                            music_btn.image = music_on_icon
                             background_chanel.play(background_menu_music, loops=-1)
+        screen.blit(background_image, (0, 0))
+        screen.blit(name_game_image, (0, 0))
         menu_group.draw(screen)
         pygame.display.flip()
 
 
 def select_level():
+    levels_group.empty()
     screen.blit(background_image, (0, 0))
     center_x, center_y = WIDTH // 2, HEIGHT // 2
     size_sprite_level = SelectLevelSprite.size_sprite_level
@@ -735,6 +736,11 @@ def select_level():
     SelectLevelSprite(center_x, center_y, 3)
     SelectLevelSprite(center_x + size_sprite_level[0] + indent_level_px, center_y, 4)
     SelectLevelSprite(center_x + size_sprite_level[0] * 2 + indent_level_px * 2, center_y, 5)
+
+    back_to_menu_btn = pygame.sprite.Sprite(levels_group)
+    back_to_menu_btn.image = back_icon
+    back_to_menu_btn.rect = back_to_menu_btn.image.get_rect(x=30, y=30)
+
     levels_group.draw(screen)
     pygame.display.flip()
     while True:
@@ -745,6 +751,8 @@ def select_level():
                 pos = event.pos
                 for level_sprite in levels_group.sprites():
                     if level_sprite.rect.collidepoint(pos):
+                        if level_sprite.image == back_icon:
+                            return None
                         return level_sprite.number_level
 
 
@@ -782,7 +790,7 @@ def generate_level(number_level):
         for x in range(len(level_map[0])):
             if level_map[y][x] == '@':
                 if not player_group.sprite:
-                    Player(player_sheet, x, y)
+                    player = Player(player_sheet, x, y)
                 else:
                     print('Fatal Error: The player has already been created before')
                     terminate()
@@ -869,28 +877,8 @@ def generate_level(number_level):
                 Tile(level_map[y][x], x, y)
             current_tile += 1
             show_loading_level(current_tile // percent_one_tile)
-    return coins, crystals
+    return player, coins, crystals
 
-
-background_chanel = pygame.mixer.Channel(0)
-background_menu_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'menu_background.wav'))
-background_game_play_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'background.wav'))
-
-clock = pygame.time.Clock()
-
-tile_size = (TILE_SIZE, TILE_SIZE)
-
-load_level_font = pygame.font.Font(None, 150)
-
-background_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'background.png'))
-background_image = pygame.transform.scale(background_image, SIZE)
-play_image = load_image(os.path.join(ICONS_FOLDER, 'play.png'))
-music_on_image = load_image(os.path.join(ICONS_FOLDER, 'music_on.png'))
-music_off_image = load_image(os.path.join(ICONS_FOLDER, 'music_off.png'))
-name_game_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'name-game.png'))
-
-player_sheet = load_image(PLAYER_TEXTURE_PATH)
-ememy_sheet = load_image(ENEMY_TEXTURE_PATH)
 
 all_sprite = pygame.sprite.Group()
 levels_group = pygame.sprite.Group()
@@ -902,18 +890,36 @@ hearts_group = pygame.sprite.Group()
 key_group = pygame.sprite.Group()
 player_group = pygame.sprite.GroupSingle()
 
-coins, crystals = start_game()
+background_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'background.png'))
+background_image = pygame.transform.scale(background_image, SIZE)
+play_icon = load_image(os.path.join(ICONS_FOLDER, 'play.png'))
+music_on_icon = load_image(os.path.join(ICONS_FOLDER, 'music_on.png'))
+music_off_icon = load_image(os.path.join(ICONS_FOLDER, 'music_off.png'))
+back_icon = load_image(os.path.join(ICONS_FOLDER, 'back.png'))
+name_game_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'name-game.png'))
 
+background_chanel = pygame.mixer.Channel(0)
+background_menu_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'menu_background.wav'))
+background_game_play_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'background.wav'))
+
+if MUSIC_ON:
+    background_chanel.play(background_menu_music, loops=-1)
+
+tile_size = (TILE_SIZE, TILE_SIZE)
+
+load_level_font = pygame.font.Font(None, 150)
+
+player_sheet = load_image(PLAYER_TEXTURE_PATH)
+ememy_sheet = load_image(ENEMY_TEXTURE_PATH)
+
+clock = pygame.time.Clock()
 camera = Camera()
-player = player_group.sprite
+
 left, right, up = False, False, False
 
 frames = 0
 
-camera.update(player)
-for sprite in all_sprite.sprites():
-    camera.apply(sprite)
-camera.set_memory(0, 0)
+player, coins, crystals = start_game()
 
 while True:
     for event in pygame.event.get():
