@@ -132,6 +132,12 @@ def cut_sheet(sheet, columns, row, width_image, height_image):
     return frames
 
 
+def terminate():
+    """Function terminate this game"""
+    pygame.quit()
+    sys.exit(0)
+
+
 class Camera:
     # зададим начальный сдвиг камеры
     def __init__(self):
@@ -875,7 +881,6 @@ class Level:
         self.crystals = 0
         all_sprite.empty()
         levels_group.empty()
-        menu_group.empty()
         tiles_group.empty()
         game_objects.empty()
         enemy_group.empty()
@@ -1014,83 +1019,91 @@ class Level:
         return 1
 
 
-def terminate():
-    """Function terminate this game"""
-    pygame.quit()
-    sys.exit(0)
+class Menu:
+    play_icon = load_image(os.path.join(ICONS_FOLDER, 'play.png'))
+    music_on_icon = load_image(os.path.join(ICONS_FOLDER, 'music_on.png'))
+    music_off_icon = load_image(os.path.join(ICONS_FOLDER, 'music_off.png'))
+    back_icon = load_image(os.path.join(ICONS_FOLDER, 'back.png'))
+    name_game_image = load_image(os.path.join(TEXT_FOLDER, 'name-game.png'))
 
+    def __init__(self):
+        if music_on:
+            background_chanel.play(background_menu_music, loops=-1)
+        self.start_btn = pygame.sprite.Sprite(menu_group)
+        self.start_btn.image = self.play_icon
+        self.start_btn.rect = self.start_btn.image.get_rect(
+            x=WIDTH // 2 - self.start_btn.image.get_width() // 2 + 100, y=HEIGHT // 2 + 30)
+        self.music_btn = pygame.sprite.Sprite(menu_group)
+        self.music_btn.image = self.music_on_icon if music_on else self.music_off_icon
+        self.music_btn.rect = self.music_btn.image.get_rect(
+            x=WIDTH // 2 - self.start_btn.image.get_width() // 2 - 100, y=HEIGHT // 2 + 30)
 
-def start_game():
-    global music_on
-    if music_on:
-        background_chanel.play(background_menu_music, loops=-1)
-    start_btn = pygame.sprite.Sprite(menu_group)
-    start_btn.image = play_icon
-    start_btn.rect = start_btn.image.get_rect(x=WIDTH // 2 - start_btn.image.get_width() // 2 + 100,
-                                              y=HEIGHT // 2 + 30)
-    music_btn = pygame.sprite.Sprite(menu_group)
-    music_btn.image = music_on_icon if music_on else music_off_icon
-    music_btn.rect = music_btn.image.get_rect(x=WIDTH // 2 - start_btn.image.get_width() // 2 - 100,
-                                              y=HEIGHT // 2 + 30)
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                pos = event.pos
-                if event.button == pygame.BUTTON_LEFT:
-                    if start_btn.rect.collidepoint(pos):
-                        number_level = select_level()
-                        if number_level:
-                            level = Level(number_level)
-                            player = level.generate()
+    def show(self):
+        global music_on
+        if music_on:
+            self.music_btn.image = self.music_on_icon
+            background_chanel.play(background_menu_music, loops=-1)
+        else:
+            self.music_btn.image = self.music_off_icon
+            background_chanel.stop()
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    pos = event.pos
+                    if event.button == pygame.BUTTON_LEFT:
+                        if self.start_btn.rect.collidepoint(pos):
+                            number_level = self.select_level()
+                            if number_level:
+                                level = Level(number_level)
+                                player = level.generate()
+                                if music_on:
+                                    background_chanel.play(background_game_play_music, loops=-1)
+                                return player, level
+                        elif self.music_btn.rect.collidepoint(pos):
                             if music_on:
-                                background_chanel.play(background_game_play_music, loops=-1)
-                            return player, level
-                    elif music_btn.rect.collidepoint(pos):
-                        if music_on:
-                            music_on = False
-                            music_btn.image = music_off_icon
-                            background_chanel.stop()
-                        else:
-                            music_on = True
-                            music_btn.image = music_on_icon
-                            background_chanel.play(background_menu_music, loops=-1)
+                                music_on = False
+                                self.music_btn.image = self.music_off_icon
+                                background_chanel.stop()
+                            else:
+                                music_on = True
+                                self.music_btn.image = self.music_on_icon
+                                background_chanel.play(background_menu_music, loops=-1)
+            screen.blit(background_image, (0, 0))
+            screen.blit(self.name_game_image, (0, 0))
+            menu_group.draw(screen)
+            pygame.display.flip()
+
+    def select_level(self):
+        levels_group.empty()
         screen.blit(background_image, (0, 0))
-        screen.blit(name_game_image, (0, 0))
-        menu_group.draw(screen)
+        center_x, center_y = WIDTH // 2, HEIGHT // 2
+        size_sprite_level = SelectLevelSprite.size_sprite_level
+        indent_level_px = 50
+        SelectLevelSprite(center_x - size_sprite_level[0] * 2 - indent_level_px * 2, center_y, 1)
+        SelectLevelSprite(center_x - size_sprite_level[0] - indent_level_px, center_y, 2)
+        SelectLevelSprite(center_x, center_y, 3)
+        SelectLevelSprite(center_x + size_sprite_level[0] + indent_level_px, center_y, 4)
+        SelectLevelSprite(center_x + size_sprite_level[0] * 2 + indent_level_px * 2, center_y, 5)
+
+        back_to_menu_btn = pygame.sprite.Sprite(levels_group)
+        back_to_menu_btn.image = self.back_icon
+        back_to_menu_btn.rect = back_to_menu_btn.image.get_rect(x=30, y=30)
+
+        levels_group.draw(screen)
         pygame.display.flip()
-
-
-def select_level():
-    levels_group.empty()
-    screen.blit(background_image, (0, 0))
-    center_x, center_y = WIDTH // 2, HEIGHT // 2
-    size_sprite_level = SelectLevelSprite.size_sprite_level
-    indent_level_px = 50
-    SelectLevelSprite(center_x - size_sprite_level[0] * 2 - indent_level_px * 2, center_y, 1)
-    SelectLevelSprite(center_x - size_sprite_level[0] - indent_level_px, center_y, 2)
-    SelectLevelSprite(center_x, center_y, 3)
-    SelectLevelSprite(center_x + size_sprite_level[0] + indent_level_px, center_y, 4)
-    SelectLevelSprite(center_x + size_sprite_level[0] * 2 + indent_level_px * 2, center_y, 5)
-
-    back_to_menu_btn = pygame.sprite.Sprite(levels_group)
-    back_to_menu_btn.image = back_icon
-    back_to_menu_btn.rect = back_to_menu_btn.image.get_rect(x=30, y=30)
-
-    levels_group.draw(screen)
-    pygame.display.flip()
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:
-                pos = event.pos
-                for level_sprite in levels_group.sprites():
-                    if level_sprite.rect.collidepoint(pos):
-                        if level_sprite.image == back_icon:
-                            return None
-                        return level_sprite.number_level
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:
+                    pos = event.pos
+                    for level_sprite in levels_group.sprites():
+                        if level_sprite.rect.collidepoint(pos):
+                            if level_sprite.image == self.back_icon:
+                                return None
+                            return level_sprite.number_level
 
 
 all_sprite = pygame.sprite.Group()
@@ -1107,11 +1120,6 @@ player_group = pygame.sprite.GroupSingle()
 
 background_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'background.png'))
 background_image = pygame.transform.scale(background_image, SIZE)
-play_icon = load_image(os.path.join(ICONS_FOLDER, 'play.png'))
-music_on_icon = load_image(os.path.join(ICONS_FOLDER, 'music_on.png'))
-music_off_icon = load_image(os.path.join(ICONS_FOLDER, 'music_off.png'))
-back_icon = load_image(os.path.join(ICONS_FOLDER, 'back.png'))
-name_game_image = load_image(os.path.join(TEXT_FOLDER, 'name-game.png'))
 
 background_chanel = pygame.mixer.Channel(0)
 background_menu_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'menu_background.wav'))
@@ -1121,6 +1129,7 @@ tile_size = (TILE_SIZE, TILE_SIZE)
 
 music_on = False
 
+menu = Menu()
 pause = Pause()
 finish = Finish()
 lose = Lose()
@@ -1130,7 +1139,7 @@ camera = Camera()
 
 frames = 0
 
-player, level = start_game()
+player, level = menu.show()
 
 while True:
     for event in pygame.event.get():
@@ -1140,7 +1149,7 @@ while True:
             if event.key == pygame.K_ESCAPE:
                 result = pause.show()
                 if result == MAIN_MENU:
-                    player, level = start_game()
+                    player, level = menu.show()
                 elif result == RESTART_LEVEL:
                     player = level.generate()
         elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -1164,13 +1173,13 @@ while True:
         finish.set_progress(progress)
         result = finish.show()
         if result == MAIN_MENU:
-            player, level = start_game()
+            player, level = menu.show()
         elif result == RESTART_LEVEL:
             player = level.generate()
     if player.lose and not player.death_mode:
         result = lose.show()
         if result == MAIN_MENU:
-            player, level = start_game()
+            player, level = menu.show()
         elif result == RESTART_LEVEL:
             player = level.generate()
     clock.tick(FPS)
