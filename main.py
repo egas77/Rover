@@ -26,7 +26,6 @@ GRAVITY = 1
 FPS = 100
 
 BACKGROUND_SOUND_VOLUME = 0.5
-MUSIC_ON = False
 
 ELEMENT_TEXTURE_FOLDER = 'data/textures/elements'
 TILES_TEXTURE_FOLDER = 'data/textures/tiles'
@@ -209,6 +208,7 @@ class GamePerson(pygame.sprite.Sprite):
     def __init__(self, x, y, *groups):
         super().__init__(groups)
         self.rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+        self.start_pos = self.rect.topleft
         self.xvel = 0
         self.yvel = 0
         self.on_ground = False
@@ -518,6 +518,21 @@ class Player(GamePerson):
     def visible_key(self):
         KeyIcon()
 
+    def get_coins(self):
+        if self.coins:
+            return self.coins
+        return 1
+
+    def get_crystals(self):
+        if self.crystals:
+            return self.crystals
+        return 1
+
+    def get_bonus(self):
+        if self.coins + self.crystals:
+            return self.coins + self.crystals
+        return 1
+
 
 class Enemy(GamePerson):
     sheet = load_image(ENEMY_TEXTURE_PATH)
@@ -617,25 +632,26 @@ class GameObject(pygame.sprite.Sprite):
                 self.collision_do_kill = collision_do_kill
             else:
                 self.mask = pygame.mask.Mask(self.rect.size, 0)
+        else:
+            if file_name not in self.images:
+                image = load_image(
+                    os.path.join(TILES_TEXTURE_FOLDER, file_name + '.png'))
+                if file_name == 'k':
+                    image = pygame.transform.scale(image, (TILE_SIZE, TILE_SIZE // 2))
+                else:
+                    image = pygame.transform.scale(image, (TILE_SIZE, TILE_SIZE))
+                self.images[file_name] = image
+            self.image = self.images[file_name]
+            self.rect = self.image.get_rect(x=tile_size[0] * x, y=tile_size[1] * y)
+            self.mask = pygame.mask.from_surface(self.image)
+            self.add(tiles_group)
+        self.start_pos = self.rect.topleft
 
 
 class Tile(GameObject):
-    images = dict()
-
     def __init__(self, tile_name, x, y):
-        super().__init__(x, y, is_tile=True, ignore_enemy=False, collision=True)
-        self.add(tiles_group)
-        if tile_name not in self.images:
-            image = load_image(
-                os.path.join(TILES_TEXTURE_FOLDER, tile_name + '.png'))
-            if tile_name == 'k':
-                image = pygame.transform.scale(image, (TILE_SIZE, TILE_SIZE // 2))
-            else:
-                image = pygame.transform.scale(image, (TILE_SIZE, TILE_SIZE))
-            self.images[tile_name] = image
-        self.image = self.images[tile_name]
-        self.rect = self.image.get_rect(x=tile_size[0] * x, y=tile_size[1] * y)
-        self.mask = pygame.mask.from_surface(self.image)
+        super().__init__(x, y, file_name=tile_name, is_tile=True, ignore_enemy=False,
+                         collision=True)
 
 
 class Heart(GameObject):
@@ -693,6 +709,7 @@ class ButtonJump(GameObject):
                          collision_do_kill=collision_do_kill, ignore_player=ignore_player,
                          ignore_enemy=ignore_enemy, size=size)
         self.rect.y += (TILE_SIZE - size[1])
+        self.start_pos = self.rect.topleft
 
 
 class GamePanel:
@@ -766,7 +783,7 @@ class Pause(GamePanel):
         )
 
         self.music_btn = pygame.sprite.Sprite(pause_group)
-        self.music_btn.image = self.music_on_image if MUSIC_ON else self.music_off_image
+        self.music_btn.image = self.music_on_image if music_on else self.music_off_image
         self.music_btn.rect = self.music_btn.image.get_rect(
             x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2 + 90,
             y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 50
@@ -780,8 +797,8 @@ class Pause(GamePanel):
         )
 
     def show(self):
-        global MUSIC_ON
-        self.music_btn.image = self.music_on_image if MUSIC_ON else self.music_off_image
+        global music_on
+        self.music_btn.image = self.music_on_image if music_on else self.music_off_image
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -798,13 +815,13 @@ class Pause(GamePanel):
                         elif self.menu_btn.rect.collidepoint(pos):
                             return MAIN_MENU
                         elif self.music_btn.rect.collidepoint(pos):
-                            if MUSIC_ON:
+                            if music_on:
                                 self.music_btn.image = self.music_off_image
-                                MUSIC_ON = False
+                                music_on = False
                                 background_chanel.stop()
                             else:
                                 self.music_btn.image = self.music_on_image
-                                MUSIC_ON = True
+                                music_on = True
                                 background_chanel.play(background_game_play_music, loops=-1)
                         elif self.restart_level_btn.rect.collidepoint(pos):
                             return RESTART_LEVEL
@@ -839,6 +856,164 @@ class Lose(GamePanel):
         self.init_buttons()
 
 
+class Level:
+    load_level_font = pygame.font.Font(None, 150)
+
+    def __init__(self, number_level):
+        self.level_map = self.load(number_level)
+
+    def load(self, number_level):
+        level_path = os.path.join(LEVELS_FOLDER, str(number_level) + '.lvl')
+        with open(level_path, mode='r', encoding='utf8') as mapFile:
+            level_map = [line.rstrip() for line in mapFile]
+            max_width = max(map(len, level_map))
+            level_map = list(map(lambda row: row.ljust(max_width, '#'), level_map))
+            return level_map
+
+    def generate(self):
+        self.coins = 0
+        self.crystals = 0
+        all_sprite.empty()
+        levels_group.empty()
+        menu_group.empty()
+        tiles_group.empty()
+        game_objects.empty()
+        enemy_group.empty()
+        hearts_group.empty()
+        key_group.empty()
+        player_group.empty()
+        count_tiles = len(self.level_map * len(self.level_map[0]))
+        percent_one_tile = count_tiles // 100
+        if not percent_one_tile:
+            percent_one_tile = 1
+        current_tile = 0
+        for y in range(len(self.level_map)):
+            for x in range(len(self.level_map[0])):
+                if self.level_map[y][x] == '@':
+                    if not player_group.sprite:
+                        player = Player(x, y)
+                    else:
+                        print('Fatal Error: The player has already been created before')
+                        terminate()
+                elif self.level_map[y][x] == '>':
+                    Enemy(x, y, ROTATION_RIGHT)
+                elif self.level_map[y][x] == '<':
+                    Enemy(x, y, ROTATION_LEFT)
+                elif self.level_map[y][x] in GAME_OBJECTS_DICT:
+                    collided = False
+                    collided_do_kill = False
+                    ignore_player = False
+                    ignore_enemy = True
+                    file_name, args = GAME_OBJECTS_DICT[self.level_map[y][x]]
+                    size = tile_size
+                    if 'collided' in args:
+                        collided = args['collided']
+                    if 'collided_do_kill' in args:
+                        collided_do_kill = args['collided_do_kill']
+                    if 'ignore_player' in args:
+                        ignore_player = args['ignore_player']
+                    if 'ignore_enemy' in args:
+                        ignore_enemy = args['ignore_enemy']
+                    if 'size' in args:
+                        size = args['size']
+                    if file_name == 'heart.png':
+                        Heart(x, y,
+                              file_name=file_name,
+                              collision=collided,
+                              collision_do_kill=collided_do_kill,
+                              ignore_player=ignore_player,
+                              ignore_enemy=ignore_enemy, size=size)
+                    elif file_name == 'pointer.png':
+                        CheckPoint(x, y,
+                                   file_name=file_name,
+                                   collision=collided,
+                                   collision_do_kill=collided_do_kill,
+                                   ignore_player=ignore_player,
+                                   ignore_enemy=ignore_enemy, size=size)
+                    elif file_name == 'button.png':
+                        ButtonJump(x, y,
+                                   file_name=file_name,
+                                   collision=collided,
+                                   collision_do_kill=collided_do_kill,
+                                   ignore_player=ignore_player,
+                                   ignore_enemy=ignore_enemy, size=size)
+                    elif file_name == 'key.png':
+                        Key(x, y,
+                            file_name=file_name,
+                            collision=collided,
+                            collision_do_kill=collided_do_kill,
+                            ignore_player=ignore_player,
+                            ignore_enemy=ignore_enemy, size=size)
+                    elif file_name == 'door.png':
+                        Door(x, y,
+                             file_name=file_name,
+                             collision=collided,
+                             collision_do_kill=collided_do_kill,
+                             ignore_player=ignore_player,
+                             ignore_enemy=ignore_enemy, size=size)
+                    elif file_name == 'coin.png':
+                        Coin(x, y,
+                             file_name=file_name,
+                             collision=collided,
+                             collision_do_kill=collided_do_kill,
+                             ignore_player=ignore_player,
+                             ignore_enemy=ignore_enemy, size=size)
+                        self.coins += 1
+                    elif file_name == 'crystal.png':
+                        Crystal(x, y,
+                                file_name=file_name,
+                                collision=collided,
+                                collision_do_kill=collided_do_kill,
+                                ignore_player=ignore_player,
+                                ignore_enemy=ignore_enemy, size=size)
+                        self.crystals += 1
+                    else:
+                        GameObject(x, y,
+                                   file_name=file_name,
+                                   collision=collided,
+                                   collision_do_kill=collided_do_kill,
+                                   ignore_player=ignore_player,
+                                   ignore_enemy=ignore_enemy, size=size)
+                elif self.level_map[y][x] != '#' and self.level_map[y][x] != ' ':
+                    Tile(self.level_map[y][x], x, y)
+                current_tile += 1
+                self.show_loading_level(current_tile // percent_one_tile)
+        if not player_group.sprite:
+            print('На уровне отсутсвует игрок')
+            terminate()
+        camera.update(player)
+        for sprite in all_sprite.sprites():
+            camera.apply(sprite)
+        camera.set_memory(0, 0)
+        return player
+
+    def show_loading_level(self, percent):
+        if percent > 100:
+            percent = 100
+        screen.blit(background_image, (0, 0))
+        percent_label = self.load_level_font.render(str(percent) + ' %', 1,
+                                                    pygame.color.Color(0, 225, 45))
+        screen.blit(percent_label,
+                    (WIDTH // 2 - percent_label.get_width() // 2,
+                     HEIGHT // 2 - percent_label.get_height() // 2))
+        pygame.display.flip()
+
+    def get_coins(self):
+        if self.coins:
+            return self.coins
+        return 1
+
+    def get_crystals(self):
+        if self.crystals:
+            return self.crystals
+        return 1
+
+    def get_bonus(self):
+        if self.coins + self.crystals:
+            return self.coins + self.crystals
+        return 1
+
+
 def terminate():
     """Function terminate this game"""
     pygame.quit()
@@ -846,15 +1021,15 @@ def terminate():
 
 
 def start_game():
-    global MUSIC_ON
-    if MUSIC_ON:
+    global music_on
+    if music_on:
         background_chanel.play(background_menu_music, loops=-1)
     start_btn = pygame.sprite.Sprite(menu_group)
     start_btn.image = play_icon
     start_btn.rect = start_btn.image.get_rect(x=WIDTH // 2 - start_btn.image.get_width() // 2 + 100,
                                               y=HEIGHT // 2 + 30)
     music_btn = pygame.sprite.Sprite(menu_group)
-    music_btn.image = music_on_icon if MUSIC_ON else music_off_icon
+    music_btn.image = music_on_icon if music_on else music_off_icon
     music_btn.rect = music_btn.image.get_rect(x=WIDTH // 2 - start_btn.image.get_width() // 2 - 100,
                                               y=HEIGHT // 2 + 30)
     while True:
@@ -867,17 +1042,18 @@ def start_game():
                     if start_btn.rect.collidepoint(pos):
                         number_level = select_level()
                         if number_level:
-                            player, coins, crystals = generate_level(number_level)
-                            if MUSIC_ON:
+                            level = Level(number_level)
+                            player = level.generate()
+                            if music_on:
                                 background_chanel.play(background_game_play_music, loops=-1)
-                            return player, coins, crystals, number_level
+                            return player, level
                     elif music_btn.rect.collidepoint(pos):
-                        if MUSIC_ON:
-                            MUSIC_ON = False
+                        if music_on:
+                            music_on = False
                             music_btn.image = music_off_icon
                             background_chanel.stop()
                         else:
-                            MUSIC_ON = True
+                            music_on = True
                             music_btn.image = music_on_icon
                             background_chanel.play(background_menu_music, loops=-1)
         screen.blit(background_image, (0, 0))
@@ -917,146 +1093,6 @@ def select_level():
                         return level_sprite.number_level
 
 
-def show_loading_level(percent):
-    if percent > 100:
-        percent = 100
-    screen.blit(background_image, (0, 0))
-    percent_label = load_level_font.render(str(percent) + ' %', 1,
-                                           pygame.color.Color(0, 225, 45))
-    screen.blit(percent_label,
-                (WIDTH // 2 - percent_label.get_width() // 2,
-                 HEIGHT // 2 - percent_label.get_height() // 2))
-    pygame.display.flip()
-
-
-def load_level(level_path):
-    with open(level_path, mode='r', encoding='utf8') as mapFile:
-        level_map = [line.rstrip() for line in mapFile]
-    max_width = max(map(len, level_map))
-    level_map = list(map(lambda row: row.ljust(max_width, '#'), level_map))
-    return level_map
-
-
-def generate_level(number_level):
-    all_sprite.empty()
-    levels_group.empty()
-    menu_group.empty()
-    tiles_group.empty()
-    game_objects.empty()
-    enemy_group.empty()
-    hearts_group.empty()
-    key_group.empty()
-    player_group.empty()
-    level_path = os.path.join(LEVELS_FOLDER, str(number_level) + '.lvl')
-    level_map = load_level(level_path)
-    count_tiles = len(level_map * len(level_map[0]))
-    percent_one_tile = count_tiles // 100
-    if not percent_one_tile:
-        percent_one_tile = 1
-    current_tile = 0
-    coins = 0
-    crystals = 0
-    for y in range(len(level_map)):
-        for x in range(len(level_map[0])):
-            if level_map[y][x] == '@':
-                if not player_group.sprite:
-                    player = Player(x, y)
-                else:
-                    print('Fatal Error: The player has already been created before')
-                    terminate()
-            elif level_map[y][x] == '>':
-                Enemy(x, y, ROTATION_RIGHT)
-            elif level_map[y][x] == '<':
-                Enemy(x, y, ROTATION_LEFT)
-            elif level_map[y][x] in GAME_OBJECTS_DICT:
-                collided = False
-                collided_do_kill = False
-                ignore_player = False
-                ignore_enemy = True
-                file_name, args = GAME_OBJECTS_DICT[level_map[y][x]]
-                size = tile_size
-                if 'collided' in args:
-                    collided = args['collided']
-                if 'collided_do_kill' in args:
-                    collided_do_kill = args['collided_do_kill']
-                if 'ignore_player' in args:
-                    ignore_player = args['ignore_player']
-                if 'ignore_enemy' in args:
-                    ignore_enemy = args['ignore_enemy']
-                if 'size' in args:
-                    size = args['size']
-                if file_name == 'heart.png':
-                    Heart(x, y,
-                          file_name=file_name,
-                          collision=collided,
-                          collision_do_kill=collided_do_kill,
-                          ignore_player=ignore_player,
-                          ignore_enemy=ignore_enemy, size=size)
-                elif file_name == 'pointer.png':
-                    CheckPoint(x, y,
-                               file_name=file_name,
-                               collision=collided,
-                               collision_do_kill=collided_do_kill,
-                               ignore_player=ignore_player,
-                               ignore_enemy=ignore_enemy, size=size)
-                elif file_name == 'button.png':
-                    ButtonJump(x, y,
-                               file_name=file_name,
-                               collision=collided,
-                               collision_do_kill=collided_do_kill,
-                               ignore_player=ignore_player,
-                               ignore_enemy=ignore_enemy, size=size)
-                elif file_name == 'key.png':
-                    Key(x, y,
-                        file_name=file_name,
-                        collision=collided,
-                        collision_do_kill=collided_do_kill,
-                        ignore_player=ignore_player,
-                        ignore_enemy=ignore_enemy, size=size)
-                elif file_name == 'door.png':
-                    Door(x, y,
-                         file_name=file_name,
-                         collision=collided,
-                         collision_do_kill=collided_do_kill,
-                         ignore_player=ignore_player,
-                         ignore_enemy=ignore_enemy, size=size)
-                elif file_name == 'coin.png':
-                    Coin(x, y,
-                         file_name=file_name,
-                         collision=collided,
-                         collision_do_kill=collided_do_kill,
-                         ignore_player=ignore_player,
-                         ignore_enemy=ignore_enemy, size=size)
-                    coins += 1
-                elif file_name == 'crystal.png':
-                    Crystal(x, y,
-                            file_name=file_name,
-                            collision=collided,
-                            collision_do_kill=collided_do_kill,
-                            ignore_player=ignore_player,
-                            ignore_enemy=ignore_enemy, size=size)
-                    crystals += 1
-                else:
-                    GameObject(x, y,
-                               file_name=file_name,
-                               collision=collided,
-                               collision_do_kill=collided_do_kill,
-                               ignore_player=ignore_player,
-                               ignore_enemy=ignore_enemy, size=size)
-            elif level_map[y][x] != '#' and level_map[y][x] != ' ':
-                Tile(level_map[y][x], x, y)
-            current_tile += 1
-            show_loading_level(current_tile // percent_one_tile)
-    if not player_group.sprite:
-        print('На уровне отсутсвует игрок')
-        terminate()
-    camera.update(player)
-    for sprite in all_sprite.sprites():
-        camera.apply(sprite)
-    camera.set_memory(0, 0)
-    return player, coins, crystals
-
-
 all_sprite = pygame.sprite.Group()
 levels_group = pygame.sprite.Group()
 menu_group = pygame.sprite.Group()
@@ -1081,20 +1117,20 @@ background_chanel = pygame.mixer.Channel(0)
 background_menu_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'menu_background.wav'))
 background_game_play_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'background.wav'))
 
+tile_size = (TILE_SIZE, TILE_SIZE)
+
+music_on = False
+
 pause = Pause()
 finish = Finish()
 lose = Lose()
-
-tile_size = (TILE_SIZE, TILE_SIZE)
-
-load_level_font = pygame.font.Font(None, 150)
 
 clock = pygame.time.Clock()
 camera = Camera()
 
 frames = 0
 
-player, coins, crystals, number_level = start_game()
+player, level = start_game()
 
 while True:
     for event in pygame.event.get():
@@ -1104,10 +1140,10 @@ while True:
             if event.key == pygame.K_ESCAPE:
                 result = pause.show()
                 if result == MAIN_MENU:
-                    player, coins, crystals, number_level = start_game()
+                    player, level = start_game()
                     break
                 elif result == RESTART_LEVEL:
-                    player, coins, crystals = generate_level(number_level)
+                    player = level.generate()
                     break
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
@@ -1138,24 +1174,18 @@ while True:
     key_group.draw(screen)
     pygame.display.flip()
     if player.finish:
-        player_crystal_coins = player.crystals + player.coins
-        level_coins_crystals = coins + crystals
-        if not player_crystal_coins:
-            player_crystal_coins = 1
-        if not level_coins_crystals:
-            level_coins_crystals = 1
-        progress = int(player_crystal_coins / level_coins_crystals * 100)
+        progress = int(player.get_bonus() / level.get_bonus() * 100)
         finish.set_progress(progress)
         result = finish.show()
         if result == MAIN_MENU:
-            player, coins, crystals, number_level = start_game()
+            player, level = start_game()
         elif result == RESTART_LEVEL:
-            player, coins, crystals = generate_level(number_level)
+            player = level.generate()
     if player.lose and not player.death_mode:
         result = lose.show()
         if result == MAIN_MENU:
-            player, coins, crystals, number_level = start_game()
+            player, level = start_game()
         elif result == RESTART_LEVEL:
-            player, coins, crystals = generate_level(number_level)
+            player = level.generate()
     clock.tick(FPS)
     frames += 1
