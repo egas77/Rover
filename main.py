@@ -444,14 +444,14 @@ class Player(GamePerson):
                     self.mask.set_at((x, y), 1)
         self.visible_hearts()
 
-    def update(self, left, right, up, speed_up):
+    def update(self, left, right, up, boost):
         if left:
             self.xvel = -MOVE_SPEED
         if right:
             self.xvel = MOVE_SPEED
         if not (left or right) or self.damage_mode or self.death_mode:
             self.xvel = 0
-        if speed_up:
+        if boost:
             self.xvel *= 1.75
         if up:
             if self.on_ground:
@@ -1089,8 +1089,6 @@ enemy_sheet = load_image(ENEMY_TEXTURE_PATH)
 clock = pygame.time.Clock()
 camera = Camera()
 
-left, right, up = False, False, False
-
 frames = 0
 
 player, coins, crystals, number_level = start_game()
@@ -1099,13 +1097,7 @@ while True:
         if event.type == pygame.QUIT:
             terminate()
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_d:
-                right = True
-            elif event.key == pygame.K_a:
-                left = True
-            elif event.key == pygame.K_SPACE:
-                up = True
-            elif event.key == pygame.K_ESCAPE:
+            if event.key == pygame.K_ESCAPE:
                 result = pause.show()
                 if result == MAIN_MENU:
                     player, coins, crystals, number_level = start_game()
@@ -1113,22 +1105,22 @@ while True:
                 elif result == RESTART_LEVEL:
                     player, coins, crystals = generate_level(number_level)
                     break
-        elif event.type == pygame.KEYUP:
-            if event.key == pygame.K_d:
-                right = False
-            elif event.key == pygame.K_a:
-                left = False
-            elif event.key == pygame.K_SPACE:
-                up = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 player.attack()
     screen.blit(background_image, (0, 0))
     if frames % 2 == 0:
+        left, right, up, boost = False, False, False, False
+        keys_status = pygame.key.get_pressed()
+        if keys_status[pygame.K_d]:
+            right = True
+        if keys_status[pygame.K_a]:
+            left = True
+        if keys_status[pygame.K_SPACE]:
+            up = True
         if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
-            player.update(left, right, up, True)
-        else:
-            player.update(left, right, up, False)
+            boost = True
+        player.update(left, right, up, boost)
         for enemy in enemy_group.sprites():
             enemy.update()
         camera.update(player)
@@ -1155,13 +1147,11 @@ while True:
             player, coins, crystals, number_level = start_game()
         elif result == RESTART_LEVEL:
             player, coins, crystals = generate_level(number_level)
-        left, right, up = False, False, False
     if player.lose and not player.death_mode:
         result = lose.show()
         if result == MAIN_MENU:
             player, coins, crystals, number_level = start_game()
         elif result == RESTART_LEVEL:
             player, coins, crystals = generate_level(number_level)
-        left, right, up = False, False, False
     clock.tick(FPS)
     frames += 1
