@@ -31,6 +31,7 @@ MUSIC_ON = False
 ELEMENT_TEXTURE_FOLDER = 'data/textures/elements'
 TILES_TEXTURE_FOLDER = 'data/textures/tiles'
 ICONS_FOLDER = 'data/textures/icons'
+TEXT_FOLDER = 'data/textures/text'
 MUSIC_FOLDER = 'data/music'
 LEVELS_FOLDER = 'data/levels'
 PLAYER_TEXTURE_PATH = 'data/textures/player/textures_48.png'
@@ -207,6 +208,8 @@ class GamePerson(pygame.sprite.Sprite):
                             self.damage()
                         else:
                             self.death()
+                            self.lose = True
+                        self.visible_hearts()
                 if isinstance(game_object, Heart):
                     self.lives += 1
                     game_object.kill()
@@ -425,6 +428,7 @@ class Player(GamePerson):
         self.lives = 3
         self.key = False
         self.finish = False
+        self.lose = False
         self.coins = 0
         self.crystals = 0
         for x in range(self.rect.width):
@@ -678,20 +682,59 @@ class SelectLevelSprite(pygame.sprite.Sprite):
                          self.image.get_height() // 2 - self.number_level_sprite.get_height() // 2))
 
 
-class Pause:
-    play_image = load_image(os.path.join(ICONS_FOLDER, 'pause_play.png'))
+class GamePanel:
     menu_image = load_image(os.path.join(ICONS_FOLDER, 'menu.png'))
+    restart_level_image = load_image(os.path.join(ICONS_FOLDER, 'restart_level.png'))
+    play_image = load_image(os.path.join(ICONS_FOLDER, 'pause_play.png'))
     music_on_image = load_image(os.path.join(ICONS_FOLDER, 'pause_music_on.png'))
     music_off_image = load_image(os.path.join(ICONS_FOLDER, 'pause_music_off.png'))
-    restart_level_image = load_image(os.path.join(ICONS_FOLDER, 'restart_level.png'))
+    lose_image = load_image(os.path.join(TEXT_FOLDER, 'lose.png'))
+
+    font = pygame.font.Font(None, 150)
 
     def __init__(self):
         self.surface = pygame.Surface((WIDTH // 3, HEIGHT))
         self.rect = self.surface.get_rect(x=WIDTH // 2 - self.surface.get_width() // 2,
                                           y=HEIGHT // 2 - self.surface.get_height() // 2)
-
         self.surface.fill(pygame.color.Color('gray'))
         self.surface.set_alpha(40)
+
+    def init_buttons(self):
+        self.menu_btn = pygame.sprite.Sprite(finish_group)
+        self.menu_btn.image = self.menu_image
+        self.menu_btn.rect = self.menu_btn.image.get_rect(
+            x=self.surface.get_width() // 2 - self.menu_btn.image.get_width() // 2 - 80,
+            y=self.surface.get_height() // 2 - self.menu_btn.image.get_height() // 2 + 150
+        )
+
+        self.restart_level_btn = pygame.sprite.Sprite(finish_group)
+        self.restart_level_btn.image = self.restart_level_image
+        self.restart_level_btn.rect = self.restart_level_btn.image.get_rect(
+            x=self.surface.get_width() // 2 - self.restart_level_btn.image.get_width() // 2 + 80,
+            y=self.surface.get_height() // 2 - self.restart_level_btn.image.get_height() // 2 + 150
+        )
+
+    def show(self):
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == pygame.BUTTON_LEFT:
+                        pos = event.pos
+                        pos = (pos[0] - self.rect.x, pos[1] - self.rect.y)
+                        if self.menu_btn.rect.collidepoint(pos):
+                            return MAIN_MENU
+                        elif self.restart_level_btn.rect.collidepoint(pos):
+                            return RESTART_LEVEL
+            finish_group.draw(self.surface)
+            screen.blit(self.surface, self.rect.topleft)
+            pygame.display.flip()
+
+
+class Pause(GamePanel):
+    def __init__(self):
+        super().__init__()
         self.init_buttons()
 
     def init_buttons(self):
@@ -757,52 +800,10 @@ class Pause:
             pygame.display.flip()
 
 
-class Finish:
-    menu_image = load_image(os.path.join(ICONS_FOLDER, 'menu.png'))
-    restart_level_image = load_image(os.path.join(ICONS_FOLDER, 'restart_level.png'))
-
-    font = pygame.font.Font(None, 150)
-
+class Finish(GamePanel):
     def __init__(self):
-        self.surface = pygame.Surface((WIDTH // 3, HEIGHT))
-        self.rect = self.surface.get_rect(x=WIDTH // 2 - self.surface.get_width() // 2,
-                                          y=HEIGHT // 2 - self.surface.get_height() // 2)
-
-        self.surface.fill(pygame.color.Color('gray'))
-        self.surface.set_alpha(40)
+        super().__init__()
         self.init_buttons()
-
-    def init_buttons(self):
-        self.menu_btn = pygame.sprite.Sprite(finish_group)
-        self.menu_btn.image = self.menu_image
-        self.menu_btn.rect = self.menu_btn.image.get_rect(
-            x=self.surface.get_width() // 2 - self.menu_btn.image.get_width() // 2 - 80,
-            y=self.surface.get_height() // 2 - self.menu_btn.image.get_height() // 2 + 150
-        )
-
-        self.restart_level_btn = pygame.sprite.Sprite(finish_group)
-        self.restart_level_btn.image = self.restart_level_image
-        self.restart_level_btn.rect = self.restart_level_btn.image.get_rect(
-            x=self.surface.get_width() // 2 - self.restart_level_btn.image.get_width() // 2 + 80,
-            y=self.surface.get_height() // 2 - self.restart_level_btn.image.get_height() // 2 + 150
-        )
-
-    def show(self):
-        while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    terminate()
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == pygame.BUTTON_LEFT:
-                        pos = event.pos
-                        pos = (pos[0] - self.rect.x, pos[1] - self.rect.y)
-                        if self.menu_btn.rect.collidepoint(pos):
-                            return MAIN_MENU
-                        elif self.restart_level_btn.rect.collidepoint(pos):
-                            return RESTART_LEVEL
-            finish_group.draw(self.surface)
-            screen.blit(self.surface, self.rect.topleft)
-            pygame.display.flip()
 
     def set_progress(self, progress):
         self.surface.fill(pygame.color.Color('gray'))
@@ -813,6 +814,16 @@ class Finish:
             progress_surface,
             (self.surface.get_width() // 2 - progress_surface.get_width() // 2, 80)
         )
+
+
+class Lose(GamePanel):
+    def __init__(self):
+        super().__init__()
+        self.surface.blit(
+            self.lose_image,
+            (self.surface.get_width() // 2 - self.lose_image.get_width() // 2, 25)
+        )
+        self.init_buttons()
 
 
 def terminate():
@@ -1051,7 +1062,7 @@ play_icon = load_image(os.path.join(ICONS_FOLDER, 'play.png'))
 music_on_icon = load_image(os.path.join(ICONS_FOLDER, 'music_on.png'))
 music_off_icon = load_image(os.path.join(ICONS_FOLDER, 'music_off.png'))
 back_icon = load_image(os.path.join(ICONS_FOLDER, 'back.png'))
-name_game_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'name-game.png'))
+name_game_image = load_image(os.path.join(TEXT_FOLDER, 'name-game.png'))
 
 background_chanel = pygame.mixer.Channel(0)
 background_menu_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'menu_background.wav'))
@@ -1059,6 +1070,7 @@ background_game_play_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 
 
 pause = Pause()
 finish = Finish()
+lose = Lose()
 
 tile_size = (TILE_SIZE, TILE_SIZE)
 
@@ -1132,6 +1144,13 @@ while True:
         progress = int(player_crystal_coins / level_coins_crystals * 100)
         finish.set_progress(progress)
         result = finish.show()
+        if result == MAIN_MENU:
+            player, coins, crystals, number_level = start_game()
+        elif result == RESTART_LEVEL:
+            player, coins, crystals = generate_level(number_level)
+        left, right, up = False, False, False
+    if player.lose:
+        result = lose.show()
         if result == MAIN_MENU:
             player, coins, crystals, number_level = start_game()
         elif result == RESTART_LEVEL:
