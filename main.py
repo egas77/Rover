@@ -217,7 +217,6 @@ class GamePerson(pygame.sprite.Sprite):
     def __init__(self, x, y, *groups):
         super().__init__(groups)
         self.rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-        self.start_pos = self.rect.topleft
         self.xvel = 0
         self.yvel = 0
         self.on_ground = False
@@ -284,7 +283,7 @@ class GamePerson(pygame.sprite.Sprite):
                 if isinstance(game_object, ButtonJump):
                     if yvel:
                         self.yvel = -JUMP_POWER * 1.35
-                    return None
+                    return
             else:
                 if game_object.ignore_enemy:
                     continue
@@ -339,7 +338,7 @@ class GamePerson(pygame.sprite.Sprite):
                         self.damage_mode = False
                         self.cut_frame_update = 0
                         if isinstance(self, Player):
-                            self.restart()
+                            self.respawn()
 
                 elif self.attack_group:
                     self.image = self.frames[self.attack_group[ROTATION_RIGHT]][
@@ -377,7 +376,7 @@ class GamePerson(pygame.sprite.Sprite):
                         self.damage_mode = False
                         self.cut_frame_update = 0
                         if isinstance(self, Player):
-                            self.restart()
+                            self.respawn()
 
                 elif self.attack_group:
                     self.image = self.frames[self.attack_group[ROTATION_LEFT]][
@@ -448,7 +447,6 @@ class Player(GamePerson):
 
     def __init__(self, x, y):
         super().__init__(x, y, all_sprite, player_group)
-        self.check_point = (self.rect.x, self.rect.y)
         self.image = self.frames['idle_right'][0]
         self.mask = pygame.mask.Mask(self.rect.size, False)
         self.space_mask_right = 19
@@ -513,7 +511,7 @@ class Player(GamePerson):
                         enemy.rotation = ROTATION_LEFT
                 enemy.attack()
 
-    def restart(self):
+    def respawn(self):
         self.spawn_check_point()
         self.visible_hearts()
 
@@ -622,49 +620,37 @@ class Enemy(GamePerson):
 class GameObject(pygame.sprite.Sprite):
     images = dict()
 
-    def __init__(self, x, y, file_name=None, collision=False, collision_do_kill=False,
-                 ignore_player=False, ignore_enemy=True, is_tile=False, size=(48, 48)):
+    def __init__(self, x, y, file_name, collision=False, collision_do_kill=False,
+                 ignore_player=False, ignore_enemy=False, is_tile=False, size=(48, 48)):
         super().__init__(game_objects, all_sprite)
         self.collision = collision
-        self.collision_do_kill = False
+        self.collision_do_kill = collision_do_kill
         self.ignore_player = ignore_player
         self.ignore_enemy = ignore_enemy
-        self.is_tile = is_tile
-        if not is_tile:
-            if file_name not in self.images:
-                image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, file_name))
-                if file_name == 'blade.png':
-                    image = pygame.transform.scale(image, size)
-                else:
-                    image = pygame.transform.scale(image, size)
-                self.images[file_name] = image
-            self.image = self.images[file_name].copy()
-            self.rect = self.image.get_rect(x=TILE_SIZE * x, y=TILE_SIZE * y)
-            if collision:
-                self.mask = pygame.mask.Mask(self.rect.size, 1)
-                self.collision_do_kill = collision_do_kill
-            else:
-                self.mask = pygame.mask.Mask(self.rect.size, 0)
-        else:
+        if is_tile:
             if file_name not in self.images:
                 image = load_image(
                     os.path.join(TILES_TEXTURE_FOLDER, file_name + '.png'))
-                if file_name == 'k':
-                    image = pygame.transform.scale(image, (TILE_SIZE, TILE_SIZE // 2))
-                else:
-                    image = pygame.transform.scale(image, (TILE_SIZE, TILE_SIZE))
                 self.images[file_name] = image
             self.image = self.images[file_name]
-            self.rect = self.image.get_rect(x=TILE_SIZE * x, y=TILE_SIZE * y)
-            self.mask = pygame.mask.from_surface(self.image)
             self.add(tiles_group)
-        self.start_pos = self.rect.topleft
+        else:
+            if file_name not in self.images:
+                image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, file_name))
+                image = pygame.transform.scale(image, size)
+                self.images[file_name] = image
+            self.image = self.images[file_name].copy()
+        self.rect = self.image.get_rect(x=TILE_SIZE * x, y=TILE_SIZE * y)
+        if collision:
+            self.mask = pygame.mask.Mask(self.rect.size, 1)
+        else:
+            self.mask = pygame.mask.Mask(self.rect.size, 0)
 
 
 class Tile(GameObject):
     def __init__(self, tile_name, x, y):
-        super().__init__(x, y, file_name=tile_name, is_tile=True, ignore_enemy=False,
-                         collision=True)
+        super().__init__(x, y, tile_name, collision=True, collision_do_kill=False,
+                         ignore_player=False, ignore_enemy=False, is_tile=True)
 
 
 class Heart(GameObject):
@@ -722,7 +708,6 @@ class ButtonJump(GameObject):
                          collision_do_kill=collision_do_kill, ignore_player=ignore_player,
                          ignore_enemy=ignore_enemy, size=size)
         self.rect.y += (TILE_SIZE - size[1])
-        self.start_pos = self.rect.topleft
 
 
 class GamePanel:
@@ -850,7 +835,7 @@ class Finish(GamePanel):
 
     def set_progress(self, progress):
         self.surface.fill(pygame.color.Color('gray'))
-        progress_surface = self.font.render(str(progress) + '%', True,
+        progress_surface = self.font.render(str(int(progress)) + '%', True,
                                             pygame.color.Color("red"))
         progress_surface.set_colorkey(progress_surface.get_at((0, 0)))
         self.surface.blit(
@@ -874,8 +859,8 @@ class Level:
 
     def __init__(self, number_level):
         level_path = os.path.join(LEVELS_FOLDER, str(number_level) + '.lvl')
-        with open(level_path, mode='r', encoding='utf8') as mapFile:
-            self.level_map = [line.rstrip() for line in mapFile]
+        with open(level_path, mode='r', encoding='utf8') as map_file:
+            self.level_map = [line.rstrip() for line in map_file]
             max_width = max(map(len, self.level_map))
             self.level_map = list(map(lambda row: row.ljust(max_width, '#'), self.level_map))
 
@@ -1022,7 +1007,7 @@ class Level:
         return 1
 
     def get_progress(self):
-        return player.get_bonus() / self.get_bonus() * 100 // 1
+        return player.get_bonus() / self.get_bonus() * 100
 
 
 class Menu:
