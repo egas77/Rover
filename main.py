@@ -1063,7 +1063,9 @@ lose = Lose()
 
 frames = 0
 
-player, level = menu.show()
+# player, level = menu.show()
+level = Level(1)
+player = level.generate()
 
 while True:
     for event in pygame.event.get():

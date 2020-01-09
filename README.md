@@ -56,6 +56,20 @@
 
 Далее нобходимо создать файл с именем состоящим из номера уровня с расширением .lvl в папке data/levels
 
+Для удобства вы можете сразу загружать уровень.  
+Для этого достаточно закоментировать строку 1066 `player, level = menu.show()`, создать уровень `level = Level(number_level)` и начать его генерацию `player = level.generate()`  
+Пример:
+```
+# player, level = menu.show()
+level = Level(1)
+player = level.generate()
+
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            terminate()...
+```
+
 ## Изменение поведения разных объектов
 
 Изменить поведение разных объектов уровня можно при помощи словаря `GAME_OBJECTS_DICT`.
