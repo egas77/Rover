@@ -5,6 +5,7 @@ from random import choice
 
 # Initialization PyGame
 pygame.init()
+pygame.mouse.set_visible(False)
 # Screen Size
 WIDTH, HEIGHT = SIZE_SCREEN = 1000, 500
 # Main Display
@@ -763,6 +764,7 @@ class GamePanel:
         )
 
     def show(self):
+        screen_copy = screen.copy()
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -776,7 +778,10 @@ class GamePanel:
                         elif self.restart_level_btn.rect.collidepoint(pos):
                             return RESTART_LEVEL
             game_panel_group.draw(self.surface)
-            screen.blit(self.surface, self.rect.topleft)
+            screen_copy.blit(self.surface, self.rect.topleft)
+            screen.blit(screen_copy, (0, 0))
+            if pygame.mouse.get_focused():
+                cursor.show()
             pygame.display.flip()
 
 
@@ -818,6 +823,7 @@ class Pause(GamePanel):
 
     def show(self):
         global music_on
+        screen_copy = screen.copy()
         self.music_btn.image = self.music_on_image if music_on else self.music_off_image
         while True:
             for event in pygame.event.get():
@@ -846,7 +852,10 @@ class Pause(GamePanel):
                         elif self.restart_level_btn.rect.collidepoint(pos):
                             return RESTART_LEVEL
             pause_group.draw(self.surface)
-            screen.blit(self.surface, self.rect.topleft)
+            screen_copy.blit(self.surface, self.rect.topleft)
+            screen.blit(screen_copy, (0, 0))
+            if pygame.mouse.get_focused():
+                cursor.show()
             pygame.display.flip()
 
 
@@ -1034,6 +1043,8 @@ class Menu:
             screen.blit(background_image, (0, 0))
             screen.blit(self.name_game_image, (0, 0))
             menu_group.draw(screen)
+            if pygame.mouse.get_focused():
+                cursor.show()
             pygame.display.flip()
 
     def select_level(self):
@@ -1052,8 +1063,6 @@ class Menu:
         back_to_menu_btn.image = self.back_icon
         back_to_menu_btn.rect = back_to_menu_btn.image.get_rect(x=30, y=30)
 
-        levels_group.draw(screen)
-        pygame.display.flip()
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -1065,6 +1074,23 @@ class Menu:
                             if level_sprite.image == self.back_icon:
                                 return None
                             return level_sprite.get_number_level()
+            screen.blit(background_image, (0, 0))
+            levels_group.draw(screen)
+            if pygame.mouse.get_pressed():
+                cursor.show()
+            pygame.display.flip()
+
+
+class Cursor(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(cursor_group)
+        self.image = load_image(os.path.join(ICONS_FOLDER, 'cursor.png'))
+        self.rect = self.image.get_rect()
+
+    def show(self):
+        self.rect.topleft = pygame.mouse.get_pos()
+        cursor_group.draw(screen)
+        print(self.rect.x, self.rect.y)
 
 
 all_sprite = pygame.sprite.Group()
@@ -1078,6 +1104,7 @@ key_group = pygame.sprite.Group()
 game_panel_group = pygame.sprite.Group()
 pause_group = pygame.sprite.Group()
 player_group = pygame.sprite.GroupSingle()
+cursor_group = pygame.sprite.GroupSingle()
 
 background_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'background.png'))
 background_image = pygame.transform.scale(background_image, SIZE_SCREEN)
@@ -1090,6 +1117,7 @@ music_on = False
 
 clock = pygame.time.Clock()
 camera = Camera()
+cursor = Cursor()
 
 menu = Menu()
 pause = Pause()
@@ -1098,10 +1126,9 @@ lose = Lose()
 
 frames = 0
 
-# player, level = menu.show()
-level = Level(3)
-player = level.generate()
-
+player, level = menu.show()
+# level = Level(3)
+# player = level.generate()
 
 while True:
     for event in pygame.event.get():
