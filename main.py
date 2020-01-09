@@ -1092,7 +1092,7 @@ lose = Lose()
 frames = 0
 
 # player, level = menu.show()
-level = Level(1)
+level = Level(3)
 player = level.generate()
 
 while True:
