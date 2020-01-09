@@ -232,6 +232,7 @@ class GamePerson(pygame.sprite.Sprite):
         self.xvel = 0
         self.yvel = 0
         self.on_ground = False
+        self.on_stairs = False
         self.death_mode = False
         self.damage_mode = False
         self.attack_group = None
@@ -297,7 +298,7 @@ class GamePerson(pygame.sprite.Sprite):
                         self.yvel = 0
                     if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
                         self.yvel *= SPEED_UP_BOOST
-                    self.on_ground = True
+                    self.on_stairs = True
                 if not game_object.collision_player:
                     continue
             else:
@@ -364,7 +365,7 @@ class GamePerson(pygame.sprite.Sprite):
                         self.attack_group = None
                         self.cut_frame_update = 0
 
-                elif self.xvel == 0 and self.yvel == 0:
+                elif self.xvel == 0 and self.yvel == 0 and (self.on_ground or self.on_stairs):
                     self.image = self.frames['idle_right'][
                         self.cut_frame_update % len(self.frames['idle_right'])]
 
@@ -374,7 +375,7 @@ class GamePerson(pygame.sprite.Sprite):
                     self.image = self.frames['jump_right'][
                         self.cut_frame_update % len(self.frames['jump_right'])]
 
-                elif self.xvel != 0:
+                elif self.xvel != 0 or (self.on_stairs and self.yvel):
                     self.image = self.frames['run_right'][
                         self.cut_frame_update % len(self.frames['run_right'])]
 
@@ -402,7 +403,7 @@ class GamePerson(pygame.sprite.Sprite):
                         self.attack_group = None
                         self.cut_frame_update = 0
 
-                elif self.xvel == 0 and self.yvel == 0 and self.on_ground:
+                elif self.xvel == 0 and self.yvel == 0 and (self.on_ground or self.on_stairs):
                     self.image = self.frames['idle_left'][
                         self.cut_frame_update % len(self.frames['idle_left'])]
 
@@ -412,7 +413,7 @@ class GamePerson(pygame.sprite.Sprite):
                     self.image = self.frames['jump_left'][
                         self.cut_frame_update % len(self.frames['jump_left'])]
 
-                elif self.xvel != 0:
+                elif self.xvel != 0 or (self.on_stairs and self.yvel):
                     self.image = self.frames['run_left'][
                         self.cut_frame_update % len(self.frames['run_left'])]
             self.cut_frame_update += 1
@@ -495,9 +496,10 @@ class Player(GamePerson):
         if keys_status[pygame.K_SPACE]:
             if self.on_ground:
                 self.yvel = -JUMP_POWER
-        if not self.on_ground:
+        if not self.on_ground and not self.on_stairs:
             self.yvel += GRAVITY
         self.on_ground = False
+        self.on_stairs = False
         self.rect.y += self.yvel
         self.collide(0, self.yvel, self.space_mask_right, self.space_mask_left,
                      self.space_mask_up, self.space_mask_bottom)
