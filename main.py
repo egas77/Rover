@@ -21,8 +21,8 @@ RESTART_LEVEL = 2
 
 COLLIDED = 1
 COLLIDED_DO_KILL = 2
-IGNORE_PLAYER = 3
-IGNORE_ENEMY = 4
+COLLIDED_PLAYER = 3
+COLLIDED_ENEMY = 4
 SIZE = 5
 
 MOVE_SPEED = 7
@@ -45,74 +45,74 @@ ENEMY_TEXTURE_PATH = 'data/textures/enemy/soldier.png'
 
 GAME_OBJECTS_DICT = {
     '!': ('blade.png',
-          {COLLIDED: True, COLLIDED_DO_KILL: True, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 96)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: True, COLLIDED_PLAYER: True,
+           COLLIDED_ENEMY: False, SIZE: (48, 96)}),
     '$': ('bush1.png',
-          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
     '%': ('bush2.png',
-          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
     '^': ('button.png',
-          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 12)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: True,
+           COLLIDED_ENEMY: False, SIZE: (48, 12)}),
     ':': ('cell.png',
-          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
     '&': ('door.png',
-          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 48)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
     '+': ('coin.png',
-          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (32, 32)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (32, 32)}),
     '|': ('crystal.png',
-          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (32, 32)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (32, 32)}),
     '1': ('flower1.png',
-          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
     '2': ('flower2.png',
-          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
     '3': ('flower3.png',
-          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
     '4': ('flower4.png',
-          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
     '5': ('flower5.png',
-          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
     '6': ('heart.png',
-          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (32, 32)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (32, 32)}),
     '7': ('key.png',
-          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (32, 32)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (32, 32)}),
     '8': ('box1.png',
-          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: False, SIZE: (48, 48)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: True,
+           COLLIDED_ENEMY: True, SIZE: (48, 48)}),
     '9': ('tree1.png',
-          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
     '0': ('tree2.png',
-          {COLLIDED: False, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 48)}),
+          {COLLIDED: False, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
     '*': ('pointer.png',
-          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: True, SIZE: (48, 48)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
     '/': ('zero_enemy.png',
-          {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: True,
-           IGNORE_ENEMY: False, SIZE: (48, 48)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: True, SIZE: (48, 48)}),
     '\\': ('zero_player.png',
-           {COLLIDED: True, COLLIDED_DO_KILL: False, IGNORE_PLAYER: False,
-            IGNORE_ENEMY: True, SIZE: (48, 48)}),
+           {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: True,
+            COLLIDED_ENEMY: False, SIZE: (48, 48)}),
     '\'': ('thorns1.png',
-           {COLLIDED: True, COLLIDED_DO_KILL: True, IGNORE_PLAYER: False,
-            IGNORE_ENEMY: False, SIZE: (240, 48)}),
+           {COLLIDED: True, COLLIDED_DO_KILL: True, COLLIDED_PLAYER: True,
+            COLLIDED_ENEMY: True, SIZE: (240, 48)}),
     '"': ('thorns2.png',
-          {COLLIDED: True, COLLIDED_DO_KILL: True, IGNORE_PLAYER: False,
-           IGNORE_ENEMY: False, SIZE: (240, 48)}),
+          {COLLIDED: True, COLLIDED_DO_KILL: True, COLLIDED_PLAYER: True,
+           COLLIDED_ENEMY: True, SIZE: (240, 48)}),
 }
 
 
@@ -242,9 +242,7 @@ class GamePerson(pygame.sprite.Sprite):
         for game_object in pygame.sprite.spritecollide(self, game_objects, False,
                                                        collided=pygame.sprite.collide_mask):
             if isinstance(self, Player):
-                if game_object.ignore_player:
-                    continue
-                if game_object.collision_do_kill:
+                if game_object.collision and game_object.collision_do_kill:
                     if not self.damage_mode and not self.death_mode:
                         self.lives -= 1
                         if self.lives > 0:
@@ -256,7 +254,6 @@ class GamePerson(pygame.sprite.Sprite):
                     self.lives += 1
                     game_object.kill()
                     self.visible_hearts()
-                    continue
                 if isinstance(game_object, CheckPoint):
                     camera.set_memory(0, 0)
                     width, height = game_object.rect.size
@@ -268,31 +265,27 @@ class GamePerson(pygame.sprite.Sprite):
                                 image.set_at((x, y), (100, 100, 100, 200))
                             game_object.mask = pygame.mask.Mask((width, height), fill=0)
                             game_object.collision = False
-                            game_object.collision_do_kill = False
-                    continue
                 if isinstance(game_object, Key):
                     game_object.kill()
                     self.key = True
                     self.visible_key()
-                    continue
                 if isinstance(game_object, Door):
                     if self.key:
                         self.finish = True
-                    continue
                 if isinstance(game_object, Coin):
                     self.coins += 1
                     game_object.kill()
-                    continue
                 if isinstance(game_object, Crystal):
                     self.crystals += 1
                     game_object.kill()
-                    continue
                 if isinstance(game_object, ButtonJump):
                     if yvel:
                         self.yvel = -JUMP_POWER * 1.35
                     return
+                if not game_object.collision_player:
+                    continue
             else:
-                if game_object.ignore_enemy:
+                if not game_object.collision_enemy:
                     continue
 
             if reverse_x and xvel != 0:
@@ -627,94 +620,86 @@ class Enemy(GamePerson):
 class GameObject(pygame.sprite.Sprite):
     images = dict()
 
-    def __init__(self, x, y, file_name, collision=False, collision_do_kill=False,
-                 ignore_player=False, ignore_enemy=False, is_tile=False, size=(48, 48)):
+    def __init__(self, x, y, file_name, configuration=None, is_tile=False):
         super().__init__(game_objects, all_sprite)
-        self.collision = collision
-        self.collision_do_kill = collision_do_kill
-        self.ignore_player = ignore_player
-        self.ignore_enemy = ignore_enemy
+        self.collision = False
+        self.collision_do_kill = False
+        self.collision_player = False
+        self.collision_enemy = False
+        self.size = (48, 48)
+        if configuration:
+            if COLLIDED in configuration:
+                self.collision = configuration[COLLIDED]
+            if COLLIDED_DO_KILL in configuration:
+                self.collision_do_kill = configuration[COLLIDED_DO_KILL]
+            if COLLIDED_PLAYER in configuration:
+                self.collision_player = configuration[COLLIDED_PLAYER]
+            if COLLIDED_ENEMY in configuration:
+                self.collision_enemy = configuration[COLLIDED_ENEMY]
+            if SIZE in configuration:
+                self.size = configuration[SIZE]
         if is_tile:
             if file_name not in self.images:
                 image = load_image(
                     os.path.join(TILES_TEXTURE_FOLDER, file_name + '.png'))
                 self.images[file_name] = image
             self.image = self.images[file_name]
+            self.collision = True
+            self.collision_player = True
+            self.collision_enemy = True
             self.add(tiles_group)
         else:
             if file_name not in self.images:
                 image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, file_name))
-                image = pygame.transform.scale(image, size)
+                image = pygame.transform.scale(image, self.size)
                 self.images[file_name] = image
             self.image = self.images[file_name].copy()
         self.rect = self.image.get_rect(x=TILE_SIZE * x, y=TILE_SIZE * y)
-        if collision:
+        if self.collision:
             self.mask = pygame.mask.Mask(self.rect.size, 1)
         else:
             self.mask = pygame.mask.Mask(self.rect.size, 0)
 
 
 class Tile(GameObject):
-    def __init__(self, tile_name, x, y):
-        super().__init__(x, y, tile_name, collision=True, collision_do_kill=False,
-                         ignore_player=False, ignore_enemy=False, is_tile=True)
+    def __init__(self, x, y, tile_name):
+        super().__init__(x, y, tile_name, is_tile=True)
 
 
 class Heart(GameObject):
-    def __init__(self, x, y, file_name='heart.png', collision=True, collision_do_kill=False,
-                 ignore_player=False, ignore_enemy=True, size=(32, 32)):
-        super().__init__(x, y, file_name=file_name, collision=collision,
-                         collision_do_kill=collision_do_kill, ignore_player=ignore_player,
-                         ignore_enemy=ignore_enemy, size=size)
+    def __init__(self, x, y, file_name='heart.png', configuration=None):
+        super().__init__(x, y, file_name, configuration)
 
 
 class Key(GameObject):
-    def __init__(self, x, y, file_name='key.png', collision=True, collision_do_kill=False,
-                 ignore_player=False, ignore_enemy=True, size=(32, 32)):
-        super().__init__(x, y, file_name=file_name, collision=collision,
-                         collision_do_kill=collision_do_kill, ignore_player=ignore_player,
-                         ignore_enemy=ignore_enemy, size=size)
+    def __init__(self, x, y, file_name='key.png', configuration=None):
+        super().__init__(x, y, file_name, configuration)
 
 
 class Door(GameObject):
-    def __init__(self, x, y, file_name='door.png', collision=True, collision_do_kill=False,
-                 ignore_player=False, ignore_enemy=True, size=(48, 48)):
-        super().__init__(x, y, file_name=file_name, collision=collision,
-                         collision_do_kill=collision_do_kill, ignore_player=ignore_player,
-                         ignore_enemy=ignore_enemy, size=size)
+    def __init__(self, x, y, file_name='door.png', configuration=None):
+        super().__init__(x, y, file_name, configuration)
 
 
 class Coin(GameObject):
-    def __init__(self, x, y, file_name='coin.png', collision=True, collision_do_kill=False,
-                 ignore_player=False, ignore_enemy=True, size=(32, 32)):
-        super().__init__(x, y, file_name=file_name, collision=collision,
-                         collision_do_kill=collision_do_kill, ignore_player=ignore_player,
-                         ignore_enemy=ignore_enemy, size=size)
+    def __init__(self, x, y, file_name='coin.png', configuration=None):
+        super().__init__(x, y, file_name, configuration)
 
 
 class Crystal(GameObject):
-    def __init__(self, x, y, file_name='crystal.png', collision=True, collision_do_kill=False,
-                 ignore_player=False, ignore_enemy=True, size=(32, 32)):
-        super().__init__(x, y, file_name=file_name, collision=collision,
-                         collision_do_kill=collision_do_kill, ignore_player=ignore_player,
-                         ignore_enemy=ignore_enemy, size=size)
+    def __init__(self, x, y, file_name='crystal.png', configuration=None):
+        super().__init__(x, y, file_name, configuration)
 
 
 class CheckPoint(GameObject):
-    def __init__(self, x, y, file_name='pointer.png', collision=True, collision_do_kill=False,
-                 ignore_player=False, ignore_enemy=True, size=(48, 48)):
-        super().__init__(x, y, file_name=file_name, collision=collision,
-                         collision_do_kill=collision_do_kill, ignore_player=ignore_player,
-                         ignore_enemy=ignore_enemy, size=size)
+    def __init__(self, x, y, file_name='pointer.png', configuration=None):
+        super().__init__(x, y, file_name, configuration)
 
 
 class ButtonJump(GameObject):
-    def __init__(self, x, y, file_name='button.png', collision=True, collision_do_kill=False,
-                 ignore_player=False, ignore_enemy=True, size=(48, 12)):
-        super().__init__(x, y, file_name=file_name, collision=collision,
-                         collision_do_kill=collision_do_kill, ignore_player=ignore_player,
-                         ignore_enemy=ignore_enemy, size=size)
-        self.rect.y += (TILE_SIZE - size[1])
+    def __init__(self, x, y, file_name='button.png', configuration=None):
+        super().__init__(x, y, file_name, configuration)
+        self.rect.y += TILE_SIZE - self.size[1]
 
 
 class GamePanel:
@@ -891,89 +876,34 @@ class Level:
                     if not player_group.sprite:
                         player = Player(x, y)
                     else:
-                        print('Fatal Error: The player has already been created before')
+                        print('На карте уже присутствует игрок')
                         terminate()
                 elif self.level_map[y][x] == '>':
                     Enemy(x, y, ROTATION_RIGHT)
                 elif self.level_map[y][x] == '<':
                     Enemy(x, y, ROTATION_LEFT)
                 elif self.level_map[y][x] in GAME_OBJECTS_DICT:
-                    collided = False
-                    collided_do_kill = False
-                    ignore_player = False
-                    ignore_enemy = False
-                    file_name, args = GAME_OBJECTS_DICT[self.level_map[y][x]]
-                    size = (TILE_SIZE, TILE_SIZE)
-                    if COLLIDED in args:
-                        collided = args[COLLIDED]
-                    if COLLIDED_DO_KILL in args:
-                        collided_do_kill = args[COLLIDED_DO_KILL]
-                    if IGNORE_PLAYER in args:
-                        ignore_player = args[IGNORE_PLAYER]
-                    if IGNORE_ENEMY in args:
-                        ignore_enemy = args[IGNORE_ENEMY]
-                    if SIZE in args:
-                        size = args[SIZE]
+                    file_name, configuration = GAME_OBJECTS_DICT[self.level_map[y][x]]
                     if file_name == 'heart.png':
-                        Heart(x, y,
-                              file_name=file_name,
-                              collision=collided,
-                              collision_do_kill=collided_do_kill,
-                              ignore_player=ignore_player,
-                              ignore_enemy=ignore_enemy, size=size)
+                        Heart(x, y, configuration=configuration)
                     elif file_name == 'pointer.png':
-                        CheckPoint(x, y,
-                                   file_name=file_name,
-                                   collision=collided,
-                                   collision_do_kill=collided_do_kill,
-                                   ignore_player=ignore_player,
-                                   ignore_enemy=ignore_enemy, size=size)
+                        CheckPoint(x, y, configuration=configuration)
                     elif file_name == 'button.png':
-                        ButtonJump(x, y,
-                                   file_name=file_name,
-                                   collision=collided,
-                                   collision_do_kill=collided_do_kill,
-                                   ignore_player=ignore_player,
-                                   ignore_enemy=ignore_enemy, size=size)
+                        ButtonJump(x, y, configuration=configuration)
                     elif file_name == 'key.png':
-                        Key(x, y,
-                            file_name=file_name,
-                            collision=collided,
-                            collision_do_kill=collided_do_kill,
-                            ignore_player=ignore_player,
-                            ignore_enemy=ignore_enemy, size=size)
+                        Key(x, y, configuration=configuration)
                     elif file_name == 'door.png':
-                        Door(x, y,
-                             file_name=file_name,
-                             collision=collided,
-                             collision_do_kill=collided_do_kill,
-                             ignore_player=ignore_player,
-                             ignore_enemy=ignore_enemy, size=size)
+                        Door(x, y, configuration=configuration)
                     elif file_name == 'coin.png':
-                        Coin(x, y,
-                             file_name=file_name,
-                             collision=collided,
-                             collision_do_kill=collided_do_kill,
-                             ignore_player=ignore_player,
-                             ignore_enemy=ignore_enemy, size=size)
+                        Coin(x, y, configuration=configuration)
                         self.coins += 1
                     elif file_name == 'crystal.png':
-                        Crystal(x, y,
-                                file_name=file_name,
-                                collision=collided,
-                                collision_do_kill=collided_do_kill,
-                                ignore_player=ignore_player,
-                                ignore_enemy=ignore_enemy, size=size)
+                        Crystal(x, y, configuration=configuration)
                         self.crystals += 1
                     else:
-                        GameObject(x, y,
-                                   file_name=file_name,
-                                   collision=collided,
-                                   collision_do_kill=collided_do_kill,
-                                   ignore_player=ignore_player,
-                                   ignore_enemy=ignore_enemy, size=size)
+                        GameObject(x, y, file_name, configuration=configuration)
                 elif self.level_map[y][x] != '#' and self.level_map[y][x] != ' ':
-                    Tile(self.level_map[y][x], x, y)
+                    Tile(x, y, self.level_map[y][x])
                 current_tile += 1
                 self.show_loading_level(current_tile // percent_one_tile)
         if not player_group.sprite:
