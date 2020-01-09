@@ -118,6 +118,9 @@ GAME_OBJECTS_DICT = {
     ',': ('stairs.png',
           {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
            COLLIDED_ENEMY: False, SIZE: (48, 48)}),
+    '-': ('scarecrow.png',
+          {COLLIDED: False, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
 }
 
 
@@ -1089,7 +1092,7 @@ lose = Lose()
 frames = 0
 
 # player, level = menu.show()
-level = Level(2)
+level = Level(1)
 player = level.generate()
 
 while True:
