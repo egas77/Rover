@@ -12,6 +12,8 @@ WIDTH, HEIGHT = SIZE_SCREEN = 1000, 500
 screen = pygame.display.set_mode(SIZE_SCREEN)
 screen_rect = screen.get_rect()
 
+MUSIC_ON = False
+
 TILE_SIZE = 48
 
 ROTATION_LEFT = 1
@@ -808,7 +810,10 @@ class Pause(GamePanel):
         )
 
         self.music_btn = pygame.sprite.Sprite(pause_group)
-        self.music_btn.image = self.music_on_image if music_on else self.music_off_image
+        if background_chanel.get_busy():
+            self.music_btn.image = self.music_on_image
+        else:
+            self.music_btn.image = self.music_off_image
         self.music_btn.rect = self.music_btn.image.get_rect(
             x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2 + 100,
             y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 100
@@ -822,9 +827,11 @@ class Pause(GamePanel):
         )
 
     def show(self):
-        global music_on
         screen_copy = screen.copy()
-        self.music_btn.image = self.music_on_image if music_on else self.music_off_image
+        if background_chanel.get_busy():
+            self.music_btn.image = self.music_on_image
+        else:
+            self.music_btn.image = self.music_off_image
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -841,13 +848,11 @@ class Pause(GamePanel):
                         elif self.menu_btn.rect.collidepoint(pos):
                             return MAIN_MENU
                         elif self.music_btn.rect.collidepoint(pos):
-                            if music_on:
+                            if background_chanel.get_busy():
                                 self.music_btn.image = self.music_off_image
-                                music_on = False
                                 background_chanel.stop()
                             else:
                                 self.music_btn.image = self.music_on_image
-                                music_on = True
                                 background_chanel.play(background_game_play_music, loops=-1)
                         elif self.restart_level_btn.rect.collidepoint(pos):
                             return RESTART_LEVEL
@@ -997,25 +1002,20 @@ class Menu:
     name_game_image = load_image(os.path.join(TEXT_FOLDER, 'name-game.png'))
 
     def __init__(self):
-        if music_on:
-            background_chanel.play(background_menu_music, loops=-1)
         self.start_btn = pygame.sprite.Sprite(menu_group)
         self.start_btn.image = self.play_icon
         self.start_btn.rect = self.start_btn.image.get_rect(
             x=WIDTH // 2 - self.start_btn.image.get_width() // 2 + 100, y=HEIGHT // 2 + 70)
         self.music_btn = pygame.sprite.Sprite(menu_group)
-        self.music_btn.image = self.music_on_icon if music_on else self.music_off_icon
+        self.music_btn.image = self.music_on_icon
         self.music_btn.rect = self.music_btn.image.get_rect(
             x=WIDTH // 2 - self.start_btn.image.get_width() // 2 - 100, y=HEIGHT // 2 + 70)
 
     def show(self):
-        global music_on
-        if music_on:
+        if background_chanel.get_busy():
             self.music_btn.image = self.music_on_icon
-            background_chanel.play(background_menu_music, loops=-1)
         else:
             self.music_btn.image = self.music_off_icon
-            background_chanel.stop()
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -1028,16 +1028,14 @@ class Menu:
                             if number_level:
                                 level = Level(number_level)
                                 player = level.generate()
-                                if music_on:
+                                if background_chanel.get_busy():
                                     background_chanel.play(background_game_play_music, loops=-1)
                                 return player, level
                         elif self.music_btn.rect.collidepoint(pos):
-                            if music_on:
-                                music_on = False
+                            if background_chanel.get_busy():
                                 self.music_btn.image = self.music_off_icon
                                 background_chanel.stop()
                             else:
-                                music_on = True
                                 self.music_btn.image = self.music_on_icon
                                 background_chanel.play(background_menu_music, loops=-1)
             screen.blit(background_image, (0, 0))
@@ -1112,8 +1110,8 @@ background_image = pygame.transform.scale(background_image, SIZE_SCREEN)
 background_chanel = pygame.mixer.Channel(0)
 background_menu_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'menu_background.wav'))
 background_game_play_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'background.wav'))
-
-music_on = False
+if MUSIC_ON:
+    background_chanel.play(background_menu_music, loops=-1)
 
 clock = pygame.time.Clock()
 camera = Camera()
@@ -1129,6 +1127,7 @@ frames = 0
 player, level = menu.show()
 # level = Level(3)
 # player = level.generate()
+
 
 while True:
     for event in pygame.event.get():
