@@ -26,6 +26,8 @@ COLLIDED_ENEMY = 4
 SIZE = 5
 
 MOVE_SPEED = 7
+SPEED_UP_BOOST = 1.75
+JUMP_BOOST = 1.35
 ENEMY_MOVE_SPEED = 1
 JUMP_POWER = 15
 GRAVITY = 1
@@ -113,6 +115,9 @@ GAME_OBJECTS_DICT = {
     '"': ('thorns2.png',
           {COLLIDED: True, COLLIDED_DO_KILL: True, COLLIDED_PLAYER: True,
            COLLIDED_ENEMY: True, SIZE: (240, 48)}),
+    ',': ('stairs.png',
+          {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (48, 48)}),
 }
 
 
@@ -280,8 +285,19 @@ class GamePerson(pygame.sprite.Sprite):
                     game_object.kill()
                 if isinstance(game_object, ButtonJump):
                     if yvel:
-                        self.yvel = -JUMP_POWER * 1.35
+                        self.yvel = -JUMP_POWER * JUMP_BOOST
                     return
+                if isinstance(game_object, Stairs):
+                    keys_status = pygame.key.get_pressed()
+                    if keys_status[pygame.K_w]:
+                        self.yvel = -MOVE_SPEED
+                    elif keys_status[pygame.K_s]:
+                        self.yvel = MOVE_SPEED
+                    else:
+                        self.yvel = 0
+                    if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
+                        self.yvel *= SPEED_UP_BOOST
+                    self.on_ground = True
                 if not game_object.collision_player:
                     continue
             else:
@@ -475,7 +491,7 @@ class Player(GamePerson):
                 self.damage_mode or self.death_mode):
             self.xvel = 0
         if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
-            self.xvel *= 1.75
+            self.xvel *= SPEED_UP_BOOST
         if keys_status[pygame.K_SPACE]:
             if self.on_ground:
                 self.yvel = -JUMP_POWER
@@ -702,6 +718,11 @@ class ButtonJump(GameObject):
         self.rect.y += TILE_SIZE - self.size[1]
 
 
+class Stairs(GameObject):
+    def __init__(self, x, y, file_name='stairs.png', configuration=None):
+        super().__init__(x, y, file_name, configuration)
+
+
 class GamePanel:
     menu_image = load_image(os.path.join(ICONS_FOLDER, 'menu.png'))
     restart_level_image = load_image(os.path.join(ICONS_FOLDER, 'restart_level.png'))
@@ -894,6 +915,8 @@ class Level:
                         Key(x, y, configuration=configuration)
                     elif file_name == 'door.png':
                         Door(x, y, configuration=configuration)
+                    elif file_name == 'stairs.png':
+                        Stairs(x, y, configuration=configuration)
                     elif file_name == 'coin.png':
                         Coin(x, y, configuration=configuration)
                         self.coins += 1
@@ -1064,7 +1087,7 @@ lose = Lose()
 frames = 0
 
 # player, level = menu.show()
-level = Level(1)
+level = Level(2)
 player = level.generate()
 
 while True:
