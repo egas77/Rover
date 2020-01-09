@@ -42,6 +42,7 @@ ICONS_FOLDER = 'data/textures/icons'
 TEXT_FOLDER = 'data/textures/text'
 MUSIC_FOLDER = 'data/music'
 LEVELS_FOLDER = 'data/levels'
+FONTS_FOLDER = 'data/fonts'
 PLAYER_TEXTURE_PATH = 'data/textures/player/player.png'
 ENEMY_TEXTURE_PATH = 'data/textures/enemy/soldier.png'
 
@@ -188,7 +189,7 @@ class Camera:
 
 
 class SelectLevelSprite(pygame.sprite.Sprite):
-    font = pygame.font.Font(None, 100)
+    font = pygame.font.Font(os.path.join(FONTS_FOLDER, 'impact.ttf'), 80)
     size_sprite_level = (100, 100)
     background_image_level = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'box1.png'))
     background_image_level = pygame.transform.scale(background_image_level, size_sprite_level)
@@ -200,7 +201,7 @@ class SelectLevelSprite(pygame.sprite.Sprite):
                                         size=self.size_sprite_level)
         self.number_level = number_level
         self.number_level_sprite = self.font.render(str(number_level), 1,
-                                                    pygame.color.Color(206, 225, 66))
+                                                    pygame.color.Color(225, 149, 54))
         self.image.blit(self.number_level_sprite,
                         (self.image.get_width() // 2 - self.number_level_sprite.get_width() // 2,
                          self.image.get_height() // 2 - self.number_level_sprite.get_height() // 2))
@@ -735,8 +736,9 @@ class GamePanel:
     music_on_image = load_image(os.path.join(ICONS_FOLDER, 'pause_music_on.png'))
     music_off_image = load_image(os.path.join(ICONS_FOLDER, 'pause_music_off.png'))
     lose_image = load_image(os.path.join(TEXT_FOLDER, 'lose.png'))
+    name_game_image = load_image(os.path.join(TEXT_FOLDER, 'name-game_panel.png'))
 
-    font = pygame.font.Font(None, 150)
+    font = pygame.font.Font(os.path.join(FONTS_FOLDER, 'impact.ttf'), 130)
 
     def __init__(self):
         self.surface = pygame.Surface((WIDTH // 3, HEIGHT))
@@ -750,14 +752,14 @@ class GamePanel:
         self.menu_btn.image = self.menu_image
         self.menu_btn.rect = self.menu_btn.image.get_rect(
             x=self.surface.get_width() // 2 - self.menu_btn.image.get_width() // 2 - 80,
-            y=self.surface.get_height() // 2 - self.menu_btn.image.get_height() // 2 + 150
+            y=self.surface.get_height() // 2 - self.menu_btn.image.get_height() // 2 + 170
         )
 
         self.restart_level_btn = pygame.sprite.Sprite(game_panel_group)
         self.restart_level_btn.image = self.restart_level_image
         self.restart_level_btn.rect = self.restart_level_btn.image.get_rect(
             x=self.surface.get_width() // 2 - self.restart_level_btn.image.get_width() // 2 + 80,
-            y=self.surface.get_height() // 2 - self.restart_level_btn.image.get_height() // 2 + 150
+            y=self.surface.get_height() // 2 - self.restart_level_btn.image.get_height() // 2 + 170
         )
 
     def show(self):
@@ -781,6 +783,8 @@ class GamePanel:
 class Pause(GamePanel):
     def __init__(self):
         super().__init__()
+        self.surface.blit(self.name_game_image,
+                          (self.surface.get_width() // 2 - self.lose_image.get_width() // 2, -50))
         self.init_buttons()
 
     def init_buttons(self):
@@ -788,28 +792,28 @@ class Pause(GamePanel):
         self.play_btn.image = self.play_image
         self.play_btn.rect = self.play_btn.image.get_rect(
             x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2,
-            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 - 80 + 30
+            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 10
         )
 
         self.menu_btn = pygame.sprite.Sprite(pause_group)
         self.menu_btn.image = self.menu_image
         self.menu_btn.rect = self.menu_btn.image.get_rect(
-            x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2 - 90,
-            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 50
+            x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2 - 100,
+            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 100
         )
 
         self.music_btn = pygame.sprite.Sprite(pause_group)
         self.music_btn.image = self.music_on_image if music_on else self.music_off_image
         self.music_btn.rect = self.music_btn.image.get_rect(
-            x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2 + 90,
-            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 50
+            x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2 + 100,
+            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 100
         )
 
         self.restart_level_btn = pygame.sprite.Sprite(pause_group)
         self.restart_level_btn.image = self.restart_level_image
         self.restart_level_btn.rect = self.restart_level_btn.image.get_rect(
             x=self.surface.get_width() // 2 - self.play_btn.image.get_width() // 2,
-            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 80 + 70
+            y=self.surface.get_height() // 2 - self.play_btn.image.get_height() // 2 + 190
         )
 
     def show(self):
@@ -854,24 +858,27 @@ class Finish(GamePanel):
     def set_progress(self, progress):
         self.surface.fill(pygame.color.Color('gray'))
         progress_surface = self.font.render(str(int(progress)) + '%', True,
-                                            pygame.color.Color("red"))
+                                            pygame.color.Color(190, 49, 0))
         progress_surface.set_colorkey(progress_surface.get_at((0, 0)))
         self.surface.blit(
             progress_surface,
-            (self.surface.get_width() // 2 - progress_surface.get_width() // 2, 80)
+            (self.surface.get_width() // 2 - progress_surface.get_width() // 2,
+             self.surface.get_height() // 2 - progress_surface.get_height() // 2 + 15)
         )
+        self.surface.blit(self.name_game_image,
+                          (self.surface.get_width() // 2 - self.lose_image.get_width() // 2, -50))
 
 
 class Lose(GamePanel):
     def __init__(self):
         super().__init__()
         self.surface.blit(self.lose_image,
-                          (self.surface.get_width() // 2 - self.lose_image.get_width() // 2, 25))
+                          (self.surface.get_width() // 2 - self.lose_image.get_width() // 2, 10))
         self.init_buttons()
 
 
 class Level:
-    load_level_font = pygame.font.Font(None, 150)
+    load_level_font = pygame.font.Font(os.path.join(FONTS_FOLDER, 'impact.ttf'), 150)
 
     def __init__(self, number_level):
         level_path = os.path.join(LEVELS_FOLDER, str(number_level) + '.lvl')
@@ -948,7 +955,7 @@ class Level:
             percent = 100
         screen.blit(background_image, (0, 0))
         percent_label = self.load_level_font.render(str(percent) + ' %', 1,
-                                                    pygame.color.Color(0, 225, 45))
+                                                    pygame.color.Color(50, 60, 57))
         screen.blit(percent_label,
                     (WIDTH // 2 - percent_label.get_width() // 2,
                      HEIGHT // 2 - percent_label.get_height() // 2))
@@ -986,11 +993,11 @@ class Menu:
         self.start_btn = pygame.sprite.Sprite(menu_group)
         self.start_btn.image = self.play_icon
         self.start_btn.rect = self.start_btn.image.get_rect(
-            x=WIDTH // 2 - self.start_btn.image.get_width() // 2 + 100, y=HEIGHT // 2 + 30)
+            x=WIDTH // 2 - self.start_btn.image.get_width() // 2 + 100, y=HEIGHT // 2 + 70)
         self.music_btn = pygame.sprite.Sprite(menu_group)
         self.music_btn.image = self.music_on_icon if music_on else self.music_off_icon
         self.music_btn.rect = self.music_btn.image.get_rect(
-            x=WIDTH // 2 - self.start_btn.image.get_width() // 2 - 100, y=HEIGHT // 2 + 30)
+            x=WIDTH // 2 - self.start_btn.image.get_width() // 2 - 100, y=HEIGHT // 2 + 70)
 
     def show(self):
         global music_on
@@ -1094,6 +1101,7 @@ frames = 0
 # player, level = menu.show()
 level = Level(3)
 player = level.generate()
+
 
 while True:
     for event in pygame.event.get():
