@@ -1126,9 +1126,9 @@ lose = Lose()
 
 frames = 0
 
-# player, level = menu.show()
-level = Level(2)
-player = level.generate()
+player, level = menu.show()
+# level = Level(2)
+# player = level.generate()
 
 
 while True:
@@ -1165,7 +1165,7 @@ while True:
             player, level = menu.show()
         elif result == RESTART_LEVEL:
             player = level.generate()
-    if player.lose and not player.death_mode:
+    elif player.lose and not player.death_mode:
         result = lose.show()
         if result == MAIN_MENU:
             player, level = menu.show()
