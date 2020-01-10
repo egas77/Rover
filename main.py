@@ -217,6 +217,9 @@ class SelectLevelSprite(pygame.sprite.Sprite):
 
 
 class HeartIcon(pygame.sprite.Sprite):
+    """
+    Responsible for displaying the number of lives
+    """
     image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'heart.png'))
     width_heart = image.get_width()
     space_x = 5
@@ -227,6 +230,9 @@ class HeartIcon(pygame.sprite.Sprite):
 
 
 class KeyIcon(pygame.sprite.Sprite):
+    """
+    Responsible for displaying whether the key is matched or not
+    """
     image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'key.png'))
     image = pygame.transform.scale(image, (48, 48))
 
@@ -236,6 +242,10 @@ class KeyIcon(pygame.sprite.Sprite):
 
 
 class GamePerson(pygame.sprite.Sprite):
+    """
+    Parent class for the player and all enemies
+    """
+
     def __init__(self, x, y, *groups):
         super().__init__(groups)
         self.rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
@@ -245,6 +255,7 @@ class GamePerson(pygame.sprite.Sprite):
         self.on_stairs = False
         self.death_mode = False
         self.damage_mode = False
+        self.attack_mode = False
         self.attack_group = None
         self.rotation = ROTATION_RIGHT
         self.cut_frame = 0
@@ -255,6 +266,18 @@ class GamePerson(pygame.sprite.Sprite):
     def collide(self, xvel, yvel,
                 space_mask_right, space_mask_left, space_mask_up, space_mask_bottom,
                 reverse_x=False):
+        """
+        Check for a collision of the character with the objects of the game world and
+         change its coordinates
+        :param xvel:
+        :param yvel:
+        :param space_mask_right:
+        :param space_mask_left:
+        :param space_mask_up:
+        :param space_mask_bottom:
+        :param reverse_x:
+        :return:
+        """
         for game_object in pygame.sprite.spritecollide(self, game_objects, False,
                                                        collided=pygame.sprite.collide_mask):
             if isinstance(self, Player):
@@ -317,35 +340,52 @@ class GamePerson(pygame.sprite.Sprite):
 
             if reverse_x and xvel != 0:
                 self.xvel = -self.xvel
-            if xvel > 0:  # если движется вправо
-                self.rect.right = game_object.rect.left + space_mask_right - 1  # то не движется вправо
-            if xvel < 0:  # если движется влево
-                self.rect.left = game_object.rect.right - space_mask_left + 1  # то не движется влево
-            if yvel > 0:  # если падает вниз
-                self.rect.bottom = game_object.rect.top + space_mask_bottom - 1  # то не падает вниз
-                self.on_ground = True  # и становится на что-то твердое
+            if xvel > 0:
+                self.rect.right = game_object.rect.left + space_mask_right - 1
+            if xvel < 0:
+                self.rect.left = game_object.rect.right - space_mask_left + 1
+            if yvel > 0:
+                self.rect.bottom = game_object.rect.top + space_mask_bottom - 1
+                self.on_ground = True
                 self.yvel = 0
-            if yvel < 0:  # если движется вверх
-                self.rect.top = game_object.rect.bottom - space_mask_up + 1  # то не движется вверх
-                self.yvel = 0  # и энергия прыжка пропадает
+            if yvel < 0:
+                self.rect.top = game_object.rect.bottom - space_mask_up + 1
+                self.yvel = 0
 
     def attack(self):
-        if not self.attack_group and not self.damage_mode and not self.death_mode:
+        """
+        Function to enable attack mode
+        :return:
+        """
+        if not self.attack_mode and not self.damage_mode and not self.death_mode:
             self.attack_group = choice(self.attack_groups)
+            self.attack_mode = True
             self.cut_frame_update = 0
 
     def damage(self):
-        if not self.damage_mode and not self.attack_group and not self.death_mode:
+        """
+        Function to enable damage mode
+        :return:
+        """
+        if not self.damage_mode and not self.attack_mode and not self.death_mode:
             self.damage_mode = True
             self.cut_frame_update = 0
 
     def death(self):
-        if not self.death_mode and not self.attack_group and not self.damage_mode:
+        """
+        Function to enable death mode
+        :return:
+        """
+        if not self.death_mode and not self.attack_mode and not self.damage_mode:
             self.death_mode = True
             self.lose = True
             self.cut_frame_update = 0
 
     def update_sprite_image(self):
+        """
+        Animate a character by changing the image of its sprite
+        :return:
+        """
         if self.xvel > 0:
             self.rotation = ROTATION_RIGHT
         elif self.xvel < 0:
@@ -367,12 +407,13 @@ class GamePerson(pygame.sprite.Sprite):
                         if isinstance(self, Player):
                             self.respawn()
 
-                elif self.attack_group:
+                elif self.attack_mode:
                     self.image = self.frames[self.attack_group[ROTATION_RIGHT]][
                         self.cut_frame_update]
                     if self.cut_frame_update == len(
                             self.frames[self.attack_group[ROTATION_RIGHT]]) - 1:
                         self.attack_group = None
+                        self.attack_mode = False
                         self.cut_frame_update = 0
 
                 elif self.xvel == 0 and self.yvel == 0 and (self.on_ground or self.on_stairs):
@@ -405,12 +446,13 @@ class GamePerson(pygame.sprite.Sprite):
                         if isinstance(self, Player):
                             self.respawn()
 
-                elif self.attack_group:
+                elif self.attack_mode:
                     self.image = self.frames[self.attack_group[ROTATION_LEFT]][
                         self.cut_frame_update]
                     if self.cut_frame_update == len(
                             self.frames[self.attack_group[ROTATION_LEFT]]) - 1:
                         self.attack_group = None
+                        self.attack_mode = False
                         self.cut_frame_update = 0
 
                 elif self.xvel == 0 and self.yvel == 0 and (self.on_ground or self.on_stairs):
@@ -430,14 +472,21 @@ class GamePerson(pygame.sprite.Sprite):
         self.cut_frame += 1
 
     def check_in_screen(self):
+        """
+        Checking that the character is on the screen
+        :return: bool
+        """
         if self.rect.colliderect(screen_rect) and not self.moving:
             return True
         return False
 
 
 class Player(GamePerson):
-    sheet = load_image(PLAYER_TEXTURE_PATH)
+    """
+    Class for main player
+    """
 
+    sheet = load_image(PLAYER_TEXTURE_PATH)
     frames = {
         'idle_right': cut_sheet(sheet, 13, 1, 48, 48),
         'run_right': cut_sheet(sheet, 8, 2, 48, 48),
@@ -456,7 +505,8 @@ class Player(GamePerson):
         'jump_left': cut_sheet(sheet, 6, 14, 48, 48),
         'damage_left': cut_sheet(sheet, 4, 15, 48, 48),
         'death_left': cut_sheet(sheet, 7, 16, 48, 48)
-    }
+    }  # images for player animation
+
     attack_groups = (
         {
             ROTATION_RIGHT: 'attack_right_1',
@@ -476,15 +526,15 @@ class Player(GamePerson):
         super().__init__(x, y, all_sprite, player_group)
         self.image = self.frames['idle_right'][0]
         self.mask = pygame.mask.Mask(self.rect.size, False)
-        self.space_mask_right = 19
-        self.space_mask_left = 18
-        self.space_mask_up = 18
-        self.space_mask_bottom = 5
-        self.lives = 3
-        self.key = False
-        self.finish = False
-        self.coins = 0
-        self.crystals = 0
+        self.space_mask_right = 19  # number of empty mask pixels right
+        self.space_mask_left = 18  # number of empty mask pixels left
+        self.space_mask_up = 18  # number of empty mask pixels up
+        self.space_mask_bottom = 5  # number of empty mask pixels bottom
+        self.lives = 3  # quantity of life
+        self.key = False  # did the player take the key
+        self.finish = False  # is the player at the finish line
+        self.coins = 0  # the number of coins that the player has collected
+        self.crystals = 0  # the number of crystals that the player has collected
         for x in range(self.rect.width):
             for y in range(self.rect.height):
                 if (self.space_mask_left <= x <= self.rect.width - self.space_mask_right
@@ -520,9 +570,13 @@ class Player(GamePerson):
         self.update_sprite_image()
 
     def check_collide_enemy(self):
+        """
+        Check that the player and enemies clash
+        :return:
+        """
         for enemy in pygame.sprite.spritecollide(self, enemy_group, False,
                                                  collided=pygame.sprite.collide_mask):
-            if self.attack_group:
+            if self.attack_mode:
                 enemy.death()
             elif not self.damage_mode and not self.death_mode:
                 self.lives -= 1
@@ -572,6 +626,10 @@ class Player(GamePerson):
 
 
 class Enemy(GamePerson):
+    """
+    Class for all enemies
+    """
+
     sheet = load_image(ENEMY_TEXTURE_PATH)
 
     frames = {
@@ -646,6 +704,10 @@ class Enemy(GamePerson):
 
 
 class GameObject(pygame.sprite.Sprite):
+    """
+    Parent class for all level objects (decorations, doors, buttons...)
+    """
+
     images = dict()
 
     def __init__(self, x, y, file_name, configuration=None, is_tile=False):
@@ -736,6 +798,10 @@ class Stairs(GameObject):
 
 
 class GamePanel:
+    """
+    Parent class for pause, win, lose menus
+    """
+
     menu_image = load_image(os.path.join(ICONS_FOLDER, 'menu.png'))
     restart_level_image = load_image(os.path.join(ICONS_FOLDER, 'restart_level.png'))
     play_image = load_image(os.path.join(ICONS_FOLDER, 'pause_play.png'))
@@ -786,7 +852,7 @@ class GamePanel:
             screen_copy.blit(self.surface, self.rect.topleft)
             screen.blit(screen_copy, (0, 0))
             if pygame.mouse.get_focused():
-                cursor.show()
+                cursor.show(screen)
             pygame.display.flip()
 
 
@@ -863,7 +929,7 @@ class Pause(GamePanel):
             screen_copy.blit(self.surface, self.rect.topleft)
             screen.blit(screen_copy, (0, 0))
             if pygame.mouse.get_focused():
-                cursor.show()
+                cursor.show(screen)
             pygame.display.flip()
 
 
@@ -905,6 +971,10 @@ class Level:
             self.level_map = list(map(lambda row: row.ljust(max_width, '#'), self.level_map))
 
     def generate(self):
+        """
+        Generating a level and displaying it on the screen
+        :return:
+        """
         self.coins = 0
         self.crystals = 0
         all_sprite.empty()
@@ -926,7 +996,7 @@ class Level:
                     if not player_group.sprite:
                         player = Player(x, y)
                     else:
-                        print('На карте уже присутствует игрок')
+                        print('There is already a player on the map')
                         terminate()
                 elif self.level_map[y][x] == '>':
                     Enemy(x, y, ROTATION_RIGHT)
@@ -959,7 +1029,7 @@ class Level:
                 current_tile += 1
                 self.show_loading_level(current_tile // percent_one_tile)
         if not player_group.sprite:
-            print('На уровне отсутсвует игрок')
+            print('There is no player on the level')
             terminate()
         camera.update(player)
         for sprite in all_sprite.sprites():
@@ -1015,6 +1085,10 @@ class Menu:
             x=WIDTH // 2 - self.start_btn.image.get_width() // 2 - 100, y=HEIGHT // 2 + 70)
 
     def show(self):
+        """
+        Displaying the menu on the screen
+        :return: player, level
+        """
         if background_chanel.get_busy():
             self.music_btn.image = self.music_on_icon
         else:
@@ -1045,10 +1119,14 @@ class Menu:
             screen.blit(self.name_game_image, (0, 0))
             menu_group.draw(screen)
             if pygame.mouse.get_focused():
-                cursor.show()
+                cursor.show(screen)
             pygame.display.flip()
 
     def select_level(self):
+        """
+        Displaying the level selection screen
+        :return: number_level or None
+        """
         levels_group.empty()
         screen.blit(background_image, (0, 0))
         center_x, center_y = WIDTH // 2, HEIGHT // 2
@@ -1078,7 +1156,7 @@ class Menu:
             screen.blit(background_image, (0, 0))
             levels_group.draw(screen)
             if pygame.mouse.get_pressed():
-                cursor.show()
+                cursor.show(screen)
             pygame.display.flip()
 
 
@@ -1088,9 +1166,9 @@ class Cursor(pygame.sprite.Sprite):
         self.image = load_image(os.path.join(ICONS_FOLDER, 'cursor.png'))
         self.rect = self.image.get_rect()
 
-    def show(self):
+    def show(self, surface):
         self.rect.topleft = pygame.mouse.get_pos()
-        cursor_group.draw(screen)
+        cursor_group.draw(surface)
 
 
 all_sprite = pygame.sprite.Group()
@@ -1127,9 +1205,6 @@ lose = Lose()
 frames = 0
 
 player, level = menu.show()
-# level = Level(2)
-# player = level.generate()
-
 
 while True:
     for event in pygame.event.get():
