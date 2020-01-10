@@ -12,7 +12,7 @@ WIDTH, HEIGHT = SIZE_SCREEN = 1000, 500
 screen = pygame.display.set_mode(SIZE_SCREEN)
 screen_rect = screen.get_rect()
 
-MUSIC_ON = False
+MUSIC_ON = True
 
 TILE_SIZE = 48
 
