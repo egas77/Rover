@@ -33,6 +33,7 @@
 "^" - button.png  
 ":" - cell.png  
 "&" - door.png  
+"=" - key.png  
 "+" - coin.png  
 "|" - crystal.png    
 "1" - flower1.png  
@@ -40,9 +41,9 @@
 "3" - flower3.png  
 "4" - flower4.png  
 "5" - flower5.png  
-"6" - heart.png  
-"7" - key.png  
-"8" - box1.png  
+"6" - heart.png 
+"7" - box1.png  
+"8" - box2.png  
 "9" - tree1.png  
 "0" - tree2.png  
 "*" - pointer.png  

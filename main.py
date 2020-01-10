@@ -68,6 +68,9 @@ GAME_OBJECTS_DICT = {
     '&': ('door.png',
           {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
            COLLIDED_ENEMY: False, SIZE: (48, 48)}),
+    '=': ('key.png',
+          {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
+           COLLIDED_ENEMY: False, SIZE: (32, 32)}),
     '+': ('coin.png',
           {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
            COLLIDED_ENEMY: False, SIZE: (32, 32)}),
@@ -92,10 +95,10 @@ GAME_OBJECTS_DICT = {
     '6': ('heart.png',
           {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
            COLLIDED_ENEMY: False, SIZE: (32, 32)}),
-    '7': ('key.png',
-          {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: False,
-           COLLIDED_ENEMY: False, SIZE: (32, 32)}),
-    '8': ('box1.png',
+    '7': ('box1.png',
+          {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: True,
+           COLLIDED_ENEMY: True, SIZE: (48, 48)}),
+    '8': ('box2.png',
           {COLLIDED: True, COLLIDED_DO_KILL: False, COLLIDED_PLAYER: True,
            COLLIDED_ENEMY: True, SIZE: (48, 48)}),
     '9': ('tree1.png',
@@ -1088,7 +1091,6 @@ class Cursor(pygame.sprite.Sprite):
     def show(self):
         self.rect.topleft = pygame.mouse.get_pos()
         cursor_group.draw(screen)
-        print(self.rect.x, self.rect.y)
 
 
 all_sprite = pygame.sprite.Group()
