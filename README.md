@@ -41,7 +41,7 @@
 "3" - flower3.png  
 "4" - flower4.png  
 "5" - flower5.png  
-"6" - heart.png 
+"6" - heart.png  
 "7" - box1.png  
 "8" - box2.png  
 "9" - tree1.png  
