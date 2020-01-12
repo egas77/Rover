@@ -37,7 +37,7 @@ GRAVITY = 1
 
 FPS = 100
 
-BACKGROUND_SOUND_VOLUME = 0.5
+BACKGROUND_SOUND_VOLUME = 1
 
 ELEMENT_TEXTURE_FOLDER = 'data/textures/elements'
 TILES_TEXTURE_FOLDER = 'data/textures/tiles'
@@ -1188,6 +1188,7 @@ background_image = load_image(os.path.join(ELEMENT_TEXTURE_FOLDER, 'background.p
 background_image = pygame.transform.scale(background_image, SIZE_SCREEN)
 
 background_chanel = pygame.mixer.Channel(0)
+background_chanel.set_volume(BACKGROUND_SOUND_VOLUME)
 background_menu_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'menu_background.wav'))
 background_game_play_music = pygame.mixer.Sound(file=os.path.join(MUSIC_FOLDER, 'background.wav'))
 if MUSIC_ON:
