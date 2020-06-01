@@ -12,7 +12,7 @@ WIDTH, HEIGHT = SIZE_SCREEN = 1000, 500
 screen = pygame.display.set_mode(SIZE_SCREEN)
 screen_rect = screen.get_rect()
 
-MUSIC_ON = True
+MUSIC_ON = True  # Включение музыки при старте игры
 
 TILE_SIZE = 48
 
@@ -28,16 +28,16 @@ COLLIDED_PLAYER = 3
 COLLIDED_ENEMY = 4
 SIZE = 5
 
-MOVE_SPEED = 7
-SPEED_UP_BOOST = 1.75
-JUMP_BOOST = 1.35
-ENEMY_MOVE_SPEED = 1
-JUMP_POWER = 15
-GRAVITY = 1
+MOVE_SPEED = 7  # Скорость передвижения отсновного игрока
+SPEED_UP_BOOST = 1.75  # Множитель ускорения при нажатии <<SHIFT>>
+JUMP_BOOST = 1.35  # Множитель силы прыжка на батуте
+ENEMY_MOVE_SPEED = 1  # Скорость передвижения врагов
+JUMP_POWER = 15  # Сила прыжка
+GRAVITY = 1  # Сила графитации
 
-FPS = 100
+FPS = 100  # Частота кадров в секунду
 
-BACKGROUND_SOUND_VOLUME = 1
+BACKGROUND_SOUND_VOLUME = 1  # Громкость мызыки на фоне (от 0 до 1)
 
 ELEMENT_TEXTURE_FOLDER = 'data/textures/elements'
 TILES_TEXTURE_FOLDER = 'data/textures/tiles'
@@ -280,7 +280,7 @@ class GamePerson(pygame.sprite.Sprite):
         """
         for game_object in pygame.sprite.spritecollide(self, game_objects, False,
                                                        collided=pygame.sprite.collide_mask):
-            if isinstance(self, Player):
+            if isinstance(self, Player):  # Если экземпляр класса основной игрок
                 if game_object.collision and game_object.collision_do_kill:
                     if not self.damage_mode and not self.death_mode:
                         self.lives -= 1
@@ -289,11 +289,11 @@ class GamePerson(pygame.sprite.Sprite):
                         else:
                             self.death()
                         self.visible_hearts()
-                if isinstance(game_object, Heart):
+                if isinstance(game_object, Heart):  # Если игрок столкнулся с бонусной жизнью
                     self.lives += 1
                     game_object.kill()
                     self.visible_hearts()
-                if isinstance(game_object, CheckPoint):
+                if isinstance(game_object, CheckPoint):  # Если игрок столкнулся с чек-поинтом
                     camera.set_memory(0, 0)
                     width, height = game_object.rect.size
                     image = game_object.image
@@ -304,24 +304,24 @@ class GamePerson(pygame.sprite.Sprite):
                                 image.set_at((x, y), (100, 100, 100, 200))
                             game_object.mask = pygame.mask.Mask((width, height), fill=0)
                             game_object.collision = False
-                if isinstance(game_object, Key):
+                if isinstance(game_object, Key):  # Если игрок столкнулся с ключом от двери
                     game_object.kill()
                     self.key = True
                     self.visible_key()
-                if isinstance(game_object, Door):
+                if isinstance(game_object, Door):  # Если игрок столкнулся с дверью
                     if self.key:
                         self.finish = True
-                if isinstance(game_object, Coin):
+                if isinstance(game_object, Coin):  # Если игрок столкнулся с монетой
                     self.coins += 1
                     game_object.kill()
-                if isinstance(game_object, Crystal):
+                if isinstance(game_object, Crystal):  # Если игрок столкнулся с кристаллом
                     self.crystals += 1
                     game_object.kill()
-                if isinstance(game_object, ButtonJump):
+                if isinstance(game_object, ButtonJump):  # Если игрок столкнулся с батутом
                     if yvel:
                         self.yvel = -JUMP_POWER * JUMP_BOOST
                     return
-                if isinstance(game_object, Stairs):
+                if isinstance(game_object, Stairs):  # Если игрок столкнулся с лестницей
                     keys_status = pygame.key.get_pressed()
                     if keys_status[pygame.K_w]:
                         self.yvel = -MOVE_SPEED
@@ -332,10 +332,10 @@ class GamePerson(pygame.sprite.Sprite):
                     if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
                         self.yvel *= SPEED_UP_BOOST
                     self.on_stairs = True
-                if not game_object.collision_player:
+                if not game_object.collision_player:  # Если у объекта отключена коллизия с игроком
                     continue
-            else:
-                if not game_object.collision_enemy:
+            else:  # Если экземпляр класса основной противник
+                if not game_object.collision_enemy:  # Если у объекта отключена коллизия с врагом
                     continue
 
             if reverse_x and xvel != 0:
@@ -835,6 +835,10 @@ class GamePanel:
         )
 
     def show(self):
+        """
+        Function visible game panel
+        :return:
+        """
         screen_copy = screen.copy()
         while True:
             for event in pygame.event.get():
@@ -896,6 +900,10 @@ class Pause(GamePanel):
         )
 
     def show(self):
+        """
+        Function visible game panel
+        :return:
+        """
         screen_copy = screen.copy()
         if background_chanel.get_busy():
             self.music_btn.image = self.music_on_image
@@ -1091,6 +1099,7 @@ class Menu:
         """
         if background_chanel.get_busy():
             self.music_btn.image = self.music_on_icon
+            background_chanel.play(background_menu_music, loops=-1)
         else:
             self.music_btn.image = self.music_off_icon
         while True:
